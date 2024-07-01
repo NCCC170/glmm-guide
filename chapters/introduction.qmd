@@ -1,0 +1,19 @@
+---
+title: "Purpose"
+bibliography: references.bib
+csl: nature.csl
+---
+
+### Objectives
+
+Motivated by realistic examples, this live document compiles critical conceptual and implementation issues commonly encountered in mixed modeling, with direct inferential implications for statistical practice. We further discuss conundrums recently emphasized by proliferating software tools used for mixed model implementation, specifically for generalized linear mixed models (GLMMs). In particular, we discuss SAS and R software platforms, though they appear to allocate differential attention and awareness to an array of mixed modeling issues. We further describe capabilities in SAS procedures that address said issues and do not yet appear to be implementable in R. Throughout, we emphasize concepts and methodological best practices GLMM users should know and address appropriately, regardless of which software they use. 
+
+The motivating examples reflect “smallish” data sets typical of many subject-matter disciplines and of early-stage R & D studies. Our approach is supported by important differences in the small sample behavior of mixed models procedures relative to their asymptotic properties. Users must be aware of these differences and know how and when to make the needed adjustments in order to work appropriately with mixed models. Furthermore, many mixed modeling issues, though conceptual in nature, are also relevant to machine learning and other predictive-type algorithms, often implemented on large(r) operational datasets generated in a (semi)automatic fashion. 
+
+Examples described herein were drawn mostly from *SAS for Mixed Models* (Stroup, et al. 2018) and *Generalized Linear Mixed Models*, 2nd edition (@stroup_generalized_2012). We start by presenting an explicit articulation of the research question, including the response variable, and if warranted, a general, though brief, explanation of the subject-matter problem. Next follow an account of the data architecture (i.e. study design, regardless of whether the study is experimental or observational in nature) and a formalized description of the full data generation process in the form of an “ANOVA shell” (i.e. “What Would Fisher Do (WWFD)” exercise; Stroup et al. 2024). This exercise facilitates the translation process for modeling and enables subsequent specification of the statistical model to be used for data analyses. For each example, we highlight the main GLMM issues at stake and further indicate any case-specific complications that need addressing. Commented SAS code and output are provided for each example.  R-literate readers are invited to provide R-code that implements the specified model for each example and addresses relevant GLMM issues. 
+
+## References
+
+::: {#refs}
+:::
+

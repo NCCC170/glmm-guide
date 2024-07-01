@@ -6,7 +6,7 @@
 
 ## Directory Guide
 
-### `data`
+### `data/`
 
 Where are all data lives: either as .xlsx, .csv or .txt files. All files should be named as thus:
 
@@ -14,16 +14,24 @@ Where are all data lives: either as .xlsx, .csv or .txt files. All files should 
 
 Where it is all lowercase, followed by a single underscore and 2-digit number so the examples will order themselves properly. 
 
-### `scripts`
+### `scripts/`
 
-All plain scripts, either as .R, or .SAS files (at this time). All files should be named as thus:
+All plain scripts, either as .R, or .SAS files (at this time). These are a stripped-down version of the worked examples including code to run the examples, but lacking the explanation provided in the worked examples.Each file should contain the code for one example. All files should be named as thus:
 
 `example_01_R.r`
 `example_01_SAS.SAS`
 
-This is largely following the convention of the data files naming system, with an "_R" or "_SAS" appended to the file names.
+This is largely following the convention of the data files naming system, with an "_R" or "_SAS" appended to the file names. 
 
-### All other files.
+
+
+### `chapters/`
+
+A filled out template, one for each example, working out the design process, the . All files should be named as thus: 
+
+`example_01.qmd`
+
+### All other files
 
 Please do not alter any of these files: 
 
@@ -35,7 +43,9 @@ Please do not alter any of these files:
 - `renv.lock` (managed automatically by the {renv} package)      
 - `styles.css`  
 
-### How to Use this
+### How to Contribute
+
+We each are working on an example, starting with an example file, creating a .
 
 #### If you want to work with GitHub and makes pull requests 
 

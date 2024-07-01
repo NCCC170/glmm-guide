@@ -1,0 +1,44 @@
+---
+title: "Example 1: RCBD & Negative Block Effects"
+bibliography: references.bib
+csl: nature.csl
+---
+
+```{r,echo=FALSE, include=FALSE}
+library(SASmarkdown)
+saspath <- "C:/Program Files/SASHome/SASFoundation/9.4/sas.exe"
+sasopts <- "-nosplash -ls 200"
+```
+
+
+::: {.callout-note}
+## GLMM Challenge
+How to handle negative variance component estimates for block effects. 
+:::
+
+
+
+## Research Problem
+
+
+
+## Data Generation Process
+
+## Statistical Model
+
+## GLMM Challenge(s) in Detail
+
+As a standard Gaussian mixed model, no complications are expected. However, in this case, the variance estimating equation yields a negative solution. A common default software solution to is force the variance, $\hat{\sigma^2_b}$, to be zero. The set-to-zero approach effectively pools block-level and unit-level sources of variation, resulting in:
+
+- a downward biased residual variance estimate;
+- an upward biased test statistics;
+- an inflated type I error rate; and
+- reduced accuracy of confidence interval coverage. 
+
+See Stroup and Littell (2002) for a detailed discussion of this issue and for justification of the recommended best practice illustrated in this example.
+
+
+## Analytical Solution
+
+
+

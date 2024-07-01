@@ -1,7 +1,20 @@
 ---
 title: "GLMM Guide"
+author: "NCCC-170 Group"
 ---
 
-Front Page Matter
+#### Contributors:
 
+Nora Bello
+Walter Stroup
+Julia Piaskowski
+....[all the rest]
+
+
+
+[[Front page matter]]
+
+### About this Resource
+
+### System Requirements
 
