@@ -91,6 +91,7 @@ See Stroup and Littell (2002) for a detailed discussion of this issue and for ju
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
 library(here); library(nlme); library(performance); library(lme4)
+library(emmeans)
 ```
 
 #### Import Data and Examine
