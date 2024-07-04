@@ -1,7 +1,6 @@
 ---
 title: "Purpose"
-bibliography: references.bib
-csl: nature.csl
+bibliography: ../references.bib
 ---
 
 ### Objectives
