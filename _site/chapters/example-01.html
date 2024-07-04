@@ -1,0 +1,3278 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.555">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>glmm-guide - Example 1: RCBD &amp; Negative Block Effects</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/kePrint-0.0.1/kePrint.js"></script>
+
+<link href="../site_libs/lightable-0.0.1/lightable.css" rel="stylesheet">
+
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../toc.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">glmm-guide</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="dropdown-header">
+ <span class="menu-text">about.qmd</span></li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#study-design" id="toc-study-design" class="nav-link active" data-scroll-target="#study-design">Study Design</a></li>
+  <li><a href="#data-generation-process" id="toc-data-generation-process" class="nav-link" data-scroll-target="#data-generation-process">Data Generation Process</a></li>
+  <li><a href="#statistical-model" id="toc-statistical-model" class="nav-link" data-scroll-target="#statistical-model">Statistical Model</a></li>
+  <li><a href="#glmm-challenges-in-detail" id="toc-glmm-challenges-in-detail" class="nav-link" data-scroll-target="#glmm-challenges-in-detail">GLMM Challenge(s) in Detail</a></li>
+  <li><a href="#analytical-solutions" id="toc-analytical-solutions" class="nav-link" data-scroll-target="#analytical-solutions">Analytical Solutions</a>
+  <ul class="collapse">
+  <li><a href="#r" id="toc-r" class="nav-link" data-scroll-target="#r">R</a></li>
+  <li><a href="#sas" id="toc-sas" class="nav-link" data-scroll-target="#sas">SAS</a></li>
+  </ul></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References:</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Example 1: RCBD &amp; Negative Block Effects</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+GLMM Challenge
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>How to handle negative variance component estimates for block effects.</p>
+</div>
+</div>
+<section id="study-design" class="level2">
+<h2 class="anchored" data-anchor-id="study-design">Study Design</h2>
+<ul>
+<li>Randomized complete block design with 5 blocks</li>
+<li>6 treatments randomly assigned to units within each block</li>
+<li>Gaussian response variable</li>
+</ul>
+<p>Example from <span class="citation" data-cites="stroup_sas_2018">Stroup et al. (<a href="#ref-stroup_sas_2018" role="doc-biblioref">2018</a>)</span>, Ch 2, Section 2.5.</p>
+</section>
+<section id="data-generation-process" class="level2">
+<h2 class="anchored" data-anchor-id="data-generation-process">Data Generation Process</h2>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table caption-top table-sm table-striped small" data-quarto-postprocess="true">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th colspan="2" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Study Design
+</div></th>
+<th colspan="2" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Treatment Design
+</div></th>
+<th colspan="2" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Combined
+</div></th>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th" style="text-align: left; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Source
+</div></th>
+<th data-quarto-table-cell-role="th" style="text-align: left; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+df
+</div></th>
+<th data-quarto-table-cell-role="th" style="text-align: left; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Source
+</div></th>
+<th data-quarto-table-cell-role="th" style="text-align: left; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+df
+</div></th>
+<th data-quarto-table-cell-role="th" style="text-align: left; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Source
+</div></th>
+<th data-quarto-table-cell-role="th" style="text-align: left; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+df
+</div></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Block</td>
+<td style="text-align: left;">4</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Block</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Treatment</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">Treatment</td>
+<td style="text-align: left;">5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Unit(block)</td>
+<td style="text-align: left;">25</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Unit(block)|Trt*</td>
+<td style="text-align: left;">25-5=20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">Total</td>
+<td style="text-align: left; font-weight: bold;">29</td>
+<td style="text-align: left; font-weight: bold;"></td>
+<td style="text-align: left; font-weight: bold;"></td>
+<td style="text-align: left; font-weight: bold;">Total</td>
+<td style="text-align: left; font-weight: bold;">29</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+<p><em>*Unit-within-block effects after accounting for treatment effects.</em></p>
+<div class="callout callout-style-default callout-caution callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important note
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<p><span class="citation" data-cites="stroup_generalized_2024">Stroup, Ptukhina, and Garai (<a href="#ref-stroup_generalized_2024" role="doc-biblioref">2024</a>)</span> define a “sensible model” as one for which there is a one-to-one correspondence between sources of variation and model effects that account for said sources. “Not sensible” models either fail to account for one or more sources, or have two or more model terms that account for the same source and are therefore confounded.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="statistical-model" class="level2">
+<h2 class="anchored" data-anchor-id="statistical-model">Statistical Model</h2>
+<ul>
+<li><p>Linear predictor: <span class="math display">\[ \eta_{ij} = \eta + \tau_i + \beta_j\]</span></p></li>
+<li><p>Distributions:</p>
+<ul>
+<li>Blocks effects, <span class="math inline">\(b_j\)</span>, are iid and</li>
+</ul></li>
+</ul>
+<p><span class="math display">\[ b_j \sim N(0, \sigma^2_b) \]</span></p>
+<pre><code>-   Observations</code></pre>
+<p><span class="math display">\[ y_{ij}|\beta_j \sim N(\mu_{ij}, \sigma^2) \]</span></p>
+<ul>
+<li>Link function:</li>
+</ul>
+<p><span class="math display">\[ \eta_{ij} = \mu_{ij} \]</span></p>
+<ul>
+<li>Treatment mean:</li>
+</ul>
+<p><span class="math display">\[ E(y_{ij}) = \mu_{i} \]</span></p>
+</section>
+<section id="glmm-challenges-in-detail" class="level2">
+<h2 class="anchored" data-anchor-id="glmm-challenges-in-detail">GLMM Challenge(s) in Detail</h2>
+<p>As a standard Gaussian mixed model, no complications are expected. However, in this case, the variance estimating equation yields a negative solution. A common default software solution to is force the variance, <span class="math inline">\(\hat{\sigma^2_b}\)</span>, to be zero. The set-to-zero approach effectively pools block-level and unit-level sources of variation, resulting in:</p>
+<ul>
+<li>a downward biased residual variance estimate;</li>
+<li>an upward biased test statistics;</li>
+<li>an inflated type I error rate; and</li>
+<li>reduced accuracy of confidence interval coverage.</li>
+</ul>
+<p>See Stroup and Littell (2002) for a detailed discussion of this issue and for justification of the recommended best practice illustrated in this example.</p>
+</section>
+<section id="analytical-solutions" class="level2">
+<h2 class="anchored" data-anchor-id="analytical-solutions">Analytical Solutions</h2>
+<section id="r" class="level3">
+<h3 class="anchored" data-anchor-id="r">R</h3>
+<section id="import-data-and-examine" class="level4">
+<h4 class="anchored" data-anchor-id="import-data-and-examine">Import Data and Examine</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>example_1 <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"example_01.csv"</span>)) </span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>example_1<span class="sc">$</span>Trt <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(example_1<span class="sc">$</span>Trt)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>example_1<span class="sc">$</span>Block <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(example_1<span class="sc">$</span>Block)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(example_1<span class="sc">$</span>Block, example_1<span class="sc">$</span>Trt)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   
+    1 2 3 4 5 6
+  1 1 1 1 1 1 1
+  2 1 1 1 1 1 1
+  3 1 1 1 1 1 1
+  4 1 1 1 1 1 1
+  5 1 1 1 1 1 1</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(example_1<span class="sc">$</span>Y)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="example-01_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="original-analysis" class="level4">
+<h4 class="anchored" data-anchor-id="original-analysis">Original Analysis</h4>
+<p><em>Note that the following two models give the same results.</em></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>example1_m1 <span class="ot">&lt;-</span> lme4<span class="sc">::</span><span class="fu">lmer</span>(Y <span class="sc">~</span> Trt <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>Block),</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">data =</span> example_1,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">REML =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>boundary (singular) fit: see help('isSingular')</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>example1_m1 <span class="ot">&lt;-</span> <span class="fu">lme</span>(Y <span class="sc">~</span> Trt,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">random =</span> <span class="sc">~</span><span class="dv">1</span><span class="sc">|</span>Block,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">data =</span> example_1,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">method =</span> <span class="st">"REML"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Examine variance components and test for singularity (i.e.&nbsp;a zero variance component)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">VarCorr</span>(example1_m1), <span class="at">comp =</span> <span class="st">"Variance"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Groups   Name        Variance
+ Block    (Intercept) 0.0000  
+ Residual             8.4792  </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">check_singularity</span>(example1_m1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+</div>
+</section>
+<section id="alternative" class="level4">
+<h4 class="anchored" data-anchor-id="alternative">Alternative</h4>
+<p>Fit the model using a compound symmetry variance structure, which will allow negative correlations within groups.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>example1_m2 <span class="ot">&lt;-</span> <span class="fu">gls</span>(Y <span class="sc">~</span> Trt, </span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">data =</span> example_1,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">method =</span> <span class="st">"REML"</span>,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">corr =</span> <span class="fu">corCompSymm</span>(<span class="at">form =</span> <span class="sc">~</span> <span class="dv">1</span><span class="sc">|</span>Block, <span class="at">fixed =</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(example1_m2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generalized least squares fit by REML
+  Model: Y ~ Trt 
+  Data: example_1 
+      AIC      BIC    logLik
+  138.274 147.6985 -61.13702
+
+Correlation Structure: Compound symmetry
+ Formula: ~1 | Block 
+ Parameter estimate(s):
+       Rho 
+-0.1842955 
+
+Coefficients:
+              Value Std.Error   t-value p-value
+(Intercept) 24.8356  1.302247 19.071345  0.0000
+Trt2         1.9190  2.004188  0.957495  0.3479
+Trt3         1.8796  2.004188  0.937836  0.3577
+Trt4         3.6128  2.004188  1.802626  0.0840
+Trt5         4.4116  2.004188  2.201191  0.0376
+Trt6         2.6410  2.004188  1.317741  0.2000
+
+ Correlation: 
+     (Intr) Trt2  Trt3  Trt4  Trt5 
+Trt2 -0.77                         
+Trt3 -0.77   0.50                  
+Trt4 -0.77   0.50  0.50            
+Trt5 -0.77   0.50  0.50  0.50      
+Trt6 -0.77   0.50  0.50  0.50  0.50
+
+Standardized residuals:
+        Min          Q1         Med          Q3         Max 
+-2.03069284 -0.30155438  0.09893841  0.68867109  1.43094956 
+
+Residual standard error: 2.911913 
+Degrees of freedom: 30 total; 24 residual</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">check_singularity</span>(example1_m2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">joint_tests</span>(example1_m1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in joint_tests(example1_m1): could not find function "joint_tests"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">joint_tests</span>(example1_m2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in joint_tests(example1_m2): could not find function "joint_tests"</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="sas" class="level3">
+<h3 class="anchored" data-anchor-id="sas">SAS</h3>
+<section id="import-data" class="level4">
+<h4 class="anchored" data-anchor-id="import-data">Import data</h4>
+<div class="cell" data-collectcode="true">
+<pre class="sashtml cell-code"><code>data Example1Data;
+   input block trt Y;
+datalines;
+1 1 24.739
+1 2 22.719
+1 3 27.247
+1 4 28.45
+1 5 30.202
+1 6 30.422
+2 1 27.921
+2 2 29.419
+2 3 27.025
+2 4 30.467
+2 5 23.334
+2 6 23.299
+3 1 24.064
+3 2 22.945
+3 3 26.169
+3 4 30.414
+3 5 28.661
+3 6 29.571
+4 1 25.102
+4 2 28.342
+4 3 29.337
+4 4 23.714
+4 5 33.414
+4 6 26.563
+5 1 22.352
+5 2 30.348
+5 3 23.798
+5 4 29.197
+5 5 30.625
+5 6 27.528
+;
+run;</code></pre>
+</div>
+</section>
+<section id="original-analysis-1" class="level4">
+<h4 class="anchored" data-anchor-id="original-analysis-1">Original Analysis</h4>
+<p>::: {.cell collectcode=‘true’}</p>
+<pre class="sashtml cell-code"><code>proc glimmix data=Example1Data;
+   class block trt;
+   model y = trt;
+   random block;
+run;</code></pre>
+<div class="branch">
+<a name="IDX"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Model Information">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Model Information
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+Data Set
+</th>
+<td class="l data">
+WORK.EXAMPLE1DATA
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Response Variable
+</th>
+<td class="l data">
+Y
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Response Distribution
+</th>
+<td class="l data">
+Gaussian
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Link Function
+</th>
+<td class="l data">
+Identity
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Variance Function
+</th>
+<td class="l data">
+Default
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Variance Matrix
+</th>
+<td class="l data">
+Not blocked
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Estimation Technique
+</th>
+<td class="l data">
+Restricted Maximum Likelihood
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Degrees of Freedom Method
+</th>
+<td class="l data">
+Containment
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX1"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Class Level Information">
+<colgroup>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="3" scope="colgroup">
+Class Level Information
+</th>
+</tr>
+<tr>
+<th class="l b header" scope="col">
+Class
+</th>
+<th class="r b header" scope="col">
+Levels
+</th>
+<th class="l b header" scope="col">
+Values
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+block
+</th>
+<td class="r data">
+5
+</td>
+<td class="l data">
+1 2 3 4 5
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+trt
+</th>
+<td class="r data">
+6
+</td>
+<td class="l data">
+1 2 3 4 5 6
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX2"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Number of Observations">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+Number of Observations Read
+</th>
+<td class="r data">
+30
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Number of Observations Used
+</th>
+<td class="r data">
+30
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX3"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Dimensions">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Dimensions
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+G-side Cov. Parameters
+</th>
+<td class="r data">
+1
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+R-side Cov. Parameters
+</th>
+<td class="r data">
+1
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Columns in X
+</th>
+<td class="r data">
+7
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Columns in Z
+</th>
+<td class="r data">
+5
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Subjects (Blocks in V)
+</th>
+<td class="r data">
+1
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Max Obs per Subject
+</th>
+<td class="r data">
+30
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX4"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Optimization Information">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Optimization Information
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+Optimization Technique
+</th>
+<td class="l data">
+Dual Quasi-Newton
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Parameters in Optimization
+</th>
+<td class="l data">
+1
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Lower Boundaries
+</th>
+<td class="l data">
+1
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Upper Boundaries
+</th>
+<td class="l data">
+0
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Fixed Effects
+</th>
+<td class="l data">
+Profiled
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Residual Variance
+</th>
+<td class="l data">
+Profiled
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Starting From
+</th>
+<td class="l data">
+Data
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX5"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Iteration History">
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="6" scope="colgroup">
+Iteration History
+</th>
+</tr>
+<tr>
+<th class="r b header" scope="col">
+Iteration
+</th>
+<th class="r b header" scope="col">
+Restarts
+</th>
+<th class="r b header" scope="col">
+Evaluations
+</th>
+<th class="r b header" scope="col">
+Objective<br>Function
+</th>
+<th class="r b header" scope="col">
+Change
+</th>
+<th class="r b header" scope="col">
+Max<br>Gradient
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="r rowheader" scope="row">
+0
+</th>
+<th class="r rowheader" scope="row">
+0
+</th>
+<td class="r data">
+4
+</td>
+<td class="r data">
+129.06857357
+</td>
+<td class="r data">
+.
+</td>
+<td class="r data">
+0
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX6"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Convergence Status">
+<colgroup>
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td class="c data">
+Convergence criterion (ABSGCONV=0.00001) satisfied.
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <br>
+<p>
+</p><div data-align="center">
+<table class="proctitle">
+<tbody><tr>
+<td class="c proctitle">
+Estimated G matrix is not positive definite.
+</td>
+</tr>
+</tbody></table>
+</div>
+<p>
+<a name="IDX7"></a>
+</p><div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Fit Statistics">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Fit Statistics
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+-2 Res Log Likelihood
+</th>
+<td class="r data">
+129.07
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+AIC (smaller is better)
+</th>
+<td class="r data">
+131.07
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+AICC (smaller is better)
+</th>
+<td class="r data">
+131.25
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+BIC (smaller is better)
+</th>
+<td class="r data">
+130.68
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+CAIC (smaller is better)
+</th>
+<td class="r data">
+131.68
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+HQIC (smaller is better)
+</th>
+<td class="r data">
+130.02
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Generalized Chi-Square
+</th>
+<td class="r data">
+203.50
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Gener. Chi-Square / DF
+</th>
+<td class="r data">
+8.48
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX8"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Covariance Parameter Estimates">
+<colgroup>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="3" scope="colgroup">
+Covariance Parameter Estimates
+</th>
+</tr>
+<tr>
+<th class="l b header" scope="col">
+Cov Parm
+</th>
+<th class="r b header" scope="col">
+Estimate
+</th>
+<th class="r b header" scope="col">
+Standard<br>Error
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+block
+</th>
+<td class="r data">
+0
+</td>
+<td class="r data">
+.
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Residual
+</th>
+<td class="r data">
+8.4792
+</td>
+<td class="r data">
+2.4477
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX9"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Type III Tests of Fixed Effects">
+<colgroup>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="5" scope="colgroup">
+Type III Tests of Fixed Effects
+</th>
+</tr>
+<tr>
+<th class="l b header" scope="col">
+Effect
+</th>
+<th class="r b header" scope="col">
+Num DF
+</th>
+<th class="r b header" scope="col">
+Den DF
+</th>
+<th class="r b header" scope="col">
+F Value
+</th>
+<th class="r b header" scope="col">
+Pr &gt; F
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+trt
+</th>
+<td class="r data">
+5
+</td>
+<td class="r data">
+20
+</td>
+<td class="r data">
+1.40
+</td>
+<td class="r data">
+0.2681
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br>
+</div>
+<p>:::</p>
+</section>
+<section id="alternative-approach-1" class="level4">
+<h4 class="anchored" data-anchor-id="alternative-approach-1">Alternative Approach #1</h4>
+<p>Fit the model using a compound symmetry variance structure, which will allow negative correlations within groups.</p>
+<pre class="sashtml cell-code"><code>proc glimmix data=Example1Data;
+   class block trt;
+   model y = trt;
+   random trt / subject=block type=cs residual v vcorr;
+run;</code></pre>
+<div class="branch">
+<a name="IDX"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Model Information">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Model Information
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+Data Set
+</th>
+<td class="l data">
+WORK.EXAMPLE1DATA
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Response Variable
+</th>
+<td class="l data">
+Y
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Response Distribution
+</th>
+<td class="l data">
+Gaussian
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Link Function
+</th>
+<td class="l data">
+Identity
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Variance Function
+</th>
+<td class="l data">
+Default
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Variance Matrix Blocked By
+</th>
+<td class="l data">
+block
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Estimation Technique
+</th>
+<td class="l data">
+Restricted Maximum Likelihood
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Degrees of Freedom Method
+</th>
+<td class="l data">
+Between-Within
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX1"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Class Level Information">
+<colgroup>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="3" scope="colgroup">
+Class Level Information
+</th>
+</tr>
+<tr>
+<th class="l b header" scope="col">
+Class
+</th>
+<th class="r b header" scope="col">
+Levels
+</th>
+<th class="l b header" scope="col">
+Values
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+block
+</th>
+<td class="r data">
+5
+</td>
+<td class="l data">
+1 2 3 4 5
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+trt
+</th>
+<td class="r data">
+6
+</td>
+<td class="l data">
+1 2 3 4 5 6
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX2"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Number of Observations">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+Number of Observations Read
+</th>
+<td class="r data">
+30
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Number of Observations Used
+</th>
+<td class="r data">
+30
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX3"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Dimensions">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Dimensions
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+R-side Cov. Parameters
+</th>
+<td class="r data">
+2
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Columns in X
+</th>
+<td class="r data">
+7
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Columns in Z per Subject
+</th>
+<td class="r data">
+0
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Subjects (Blocks in V)
+</th>
+<td class="r data">
+5
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Max Obs per Subject
+</th>
+<td class="r data">
+6
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX4"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Optimization Information">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Optimization Information
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+Optimization Technique
+</th>
+<td class="l data">
+Dual Quasi-Newton
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Parameters in Optimization
+</th>
+<td class="l data">
+1
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Lower Boundaries
+</th>
+<td class="l data">
+0
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Upper Boundaries
+</th>
+<td class="l data">
+0
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Fixed Effects
+</th>
+<td class="l data">
+Profiled
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Residual Variance
+</th>
+<td class="l data">
+Profiled
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Starting From
+</th>
+<td class="l data">
+Data
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX5"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Iteration History">
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="6" scope="colgroup">
+Iteration History
+</th>
+</tr>
+<tr>
+<th class="r b header" scope="col">
+Iteration
+</th>
+<th class="r b header" scope="col">
+Restarts
+</th>
+<th class="r b header" scope="col">
+Evaluations
+</th>
+<th class="r b header" scope="col">
+Objective<br>Function
+</th>
+<th class="r b header" scope="col">
+Change
+</th>
+<th class="r b header" scope="col">
+Max<br>Gradient
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="r rowheader" scope="row">
+0
+</th>
+<th class="r rowheader" scope="row">
+0
+</th>
+<td class="r data">
+4
+</td>
+<td class="r data">
+122.27404476
+</td>
+<td class="r data">
+.
+</td>
+<td class="r data" nowrap="">
+1.11E-10
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX6"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Convergence Status">
+<colgroup>
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td class="c data">
+Convergence criterion (ABSGCONV=0.00001) satisfied.
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX7"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Fit Statistics">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Fit Statistics
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+-2 Res Log Likelihood
+</th>
+<td class="r data">
+122.27
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+AIC (smaller is better)
+</th>
+<td class="r data">
+126.27
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+AICC (smaller is better)
+</th>
+<td class="r data">
+126.85
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+BIC (smaller is better)
+</th>
+<td class="r data">
+125.49
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+CAIC (smaller is better)
+</th>
+<td class="r data">
+127.49
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+HQIC (smaller is better)
+</th>
+<td class="r data">
+124.18
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Generalized Chi-Square
+</th>
+<td class="r data">
+241.01
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Gener. Chi-Square / DF
+</th>
+<td class="r data">
+10.04
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX8"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Estimated V Matrix for block 1">
+<colgroup>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="7" scope="colgroup">
+Estimated V Matrix for block 1
+</th>
+</tr>
+<tr>
+<th class="r b header" scope="col">
+Row
+</th>
+<th class="r b header" scope="col">
+Col1
+</th>
+<th class="r b header" scope="col">
+Col2
+</th>
+<th class="r b header" scope="col">
+Col3
+</th>
+<th class="r b header" scope="col">
+Col4
+</th>
+<th class="r b header" scope="col">
+Col5
+</th>
+<th class="r b header" scope="col">
+Col6
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="r rowheader" scope="row">
+1
+</th>
+<td class="r data">
+8.4792
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+</tr>
+<tr>
+<th class="r rowheader" scope="row">
+2
+</th>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data">
+8.4792
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+</tr>
+<tr>
+<th class="r rowheader" scope="row">
+3
+</th>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data">
+8.4792
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+</tr>
+<tr>
+<th class="r rowheader" scope="row">
+4
+</th>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data">
+8.4792
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+</tr>
+<tr>
+<th class="r rowheader" scope="row">
+5
+</th>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data">
+8.4792
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+</tr>
+<tr>
+<th class="r rowheader" scope="row">
+6
+</th>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data">
+8.4792
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX9"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Estimated V Correlation Matrix for block 1">
+<colgroup>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="7" scope="colgroup">
+Estimated V Correlation Matrix for block 1
+</th>
+</tr>
+<tr>
+<th class="r b header" scope="col">
+Row
+</th>
+<th class="r b header" scope="col">
+Col1
+</th>
+<th class="r b header" scope="col">
+Col2
+</th>
+<th class="r b header" scope="col">
+Col3
+</th>
+<th class="r b header" scope="col">
+Col4
+</th>
+<th class="r b header" scope="col">
+Col5
+</th>
+<th class="r b header" scope="col">
+Col6
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="r rowheader" scope="row">
+1
+</th>
+<td class="r data">
+1.0000
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+</tr>
+<tr>
+<th class="r rowheader" scope="row">
+2
+</th>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data">
+1.0000
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+</tr>
+<tr>
+<th class="r rowheader" scope="row">
+3
+</th>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data">
+1.0000
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+</tr>
+<tr>
+<th class="r rowheader" scope="row">
+4
+</th>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data">
+1.0000
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+</tr>
+<tr>
+<th class="r rowheader" scope="row">
+5
+</th>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data">
+1.0000
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+</tr>
+<tr>
+<th class="r rowheader" scope="row">
+6
+</th>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data" nowrap="">
+-0.1843
+</td>
+<td class="r data">
+1.0000
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX10"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Covariance Parameter Estimates">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="4" scope="colgroup">
+Covariance Parameter Estimates
+</th>
+</tr>
+<tr>
+<th class="l b header" scope="col">
+Cov Parm
+</th>
+<th class="l b header" scope="col">
+Subject
+</th>
+<th class="r b header" scope="col">
+Estimate
+</th>
+<th class="r b header" scope="col">
+Standard<br>Error
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+CS
+</th>
+<th class="l data">
+block
+</th>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data">
+0.5350
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Residual
+</th>
+<th class="l data">
+</th>
+<td class="r data">
+10.0419
+</td>
+<td class="r data">
+3.1755
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX11"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Type III Tests of Fixed Effects">
+<colgroup>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="5" scope="colgroup">
+Type III Tests of Fixed Effects
+</th>
+</tr>
+<tr>
+<th class="l b header" scope="col">
+Effect
+</th>
+<th class="r b header" scope="col">
+Num DF
+</th>
+<th class="r b header" scope="col">
+Den DF
+</th>
+<th class="r b header" scope="col">
+F Value
+</th>
+<th class="r b header" scope="col">
+Pr &gt; F
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+trt
+</th>
+<td class="r data">
+5
+</td>
+<td class="r data">
+20
+</td>
+<td class="r data">
+1.18
+</td>
+<td class="r data">
+0.3542
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br>
+</div>
+</section>
+<section id="alternative-approach-2" class="level4">
+<h4 class="anchored" data-anchor-id="alternative-approach-2">Alternative Approach #2</h4>
+<p>Fit the model allowing the variance componens to become negative.</p>
+<p>SAS (unlike R) has an option for overriding the restriction on negative variance components.</p>
+<pre class="sashtml cell-code"><code>proc glimmix data=Example1Data nobound;
+   class block trt;
+   model y = trt;
+   random block;
+run;</code></pre>
+<div class="branch">
+<a name="IDX"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Model Information">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Model Information
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+Data Set
+</th>
+<td class="l data">
+WORK.EXAMPLE1DATA
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Response Variable
+</th>
+<td class="l data">
+Y
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Response Distribution
+</th>
+<td class="l data">
+Gaussian
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Link Function
+</th>
+<td class="l data">
+Identity
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Variance Function
+</th>
+<td class="l data">
+Default
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Variance Matrix
+</th>
+<td class="l data">
+Not blocked
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Estimation Technique
+</th>
+<td class="l data">
+Restricted Maximum Likelihood
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Degrees of Freedom Method
+</th>
+<td class="l data">
+Containment
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX1"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Class Level Information">
+<colgroup>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="3" scope="colgroup">
+Class Level Information
+</th>
+</tr>
+<tr>
+<th class="l b header" scope="col">
+Class
+</th>
+<th class="r b header" scope="col">
+Levels
+</th>
+<th class="l b header" scope="col">
+Values
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+block
+</th>
+<td class="r data">
+5
+</td>
+<td class="l data">
+1 2 3 4 5
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+trt
+</th>
+<td class="r data">
+6
+</td>
+<td class="l data">
+1 2 3 4 5 6
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX2"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Number of Observations">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+Number of Observations Read
+</th>
+<td class="r data">
+30
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Number of Observations Used
+</th>
+<td class="r data">
+30
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX3"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Dimensions">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Dimensions
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+G-side Cov. Parameters
+</th>
+<td class="r data">
+1
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+R-side Cov. Parameters
+</th>
+<td class="r data">
+1
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Columns in X
+</th>
+<td class="r data">
+7
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Columns in Z
+</th>
+<td class="r data">
+5
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Subjects (Blocks in V)
+</th>
+<td class="r data">
+1
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Max Obs per Subject
+</th>
+<td class="r data">
+30
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX4"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Optimization Information">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Optimization Information
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+Optimization Technique
+</th>
+<td class="l data">
+Dual Quasi-Newton
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Parameters in Optimization
+</th>
+<td class="l data">
+1
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Lower Boundaries
+</th>
+<td class="l data">
+0
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Upper Boundaries
+</th>
+<td class="l data">
+0
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Fixed Effects
+</th>
+<td class="l data">
+Profiled
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Residual Variance
+</th>
+<td class="l data">
+Profiled
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Starting From
+</th>
+<td class="l data">
+Data
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX5"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Iteration History">
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="6" scope="colgroup">
+Iteration History
+</th>
+</tr>
+<tr>
+<th class="r b header" scope="col">
+Iteration
+</th>
+<th class="r b header" scope="col">
+Restarts
+</th>
+<th class="r b header" scope="col">
+Evaluations
+</th>
+<th class="r b header" scope="col">
+Objective<br>Function
+</th>
+<th class="r b header" scope="col">
+Change
+</th>
+<th class="r b header" scope="col">
+Max<br>Gradient
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="r rowheader" scope="row">
+0
+</th>
+<th class="r rowheader" scope="row">
+0
+</th>
+<td class="r data">
+4
+</td>
+<td class="r data">
+122.27404476
+</td>
+<td class="r data">
+.
+</td>
+<td class="r data" nowrap="">
+1.26E-10
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX6"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Convergence Status">
+<colgroup>
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td class="c data">
+Convergence criterion (ABSGCONV=0.00001) satisfied.
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <br>
+<p>
+</p><div data-align="center">
+<table class="proctitle">
+<tbody><tr>
+<td class="c proctitle">
+Estimated G matrix is not positive definite.
+</td>
+</tr>
+</tbody></table>
+</div>
+<p>
+<a name="IDX7"></a>
+</p><div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Fit Statistics">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="2" scope="colgroup">
+Fit Statistics
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+-2 Res Log Likelihood
+</th>
+<td class="r data">
+122.27
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+AIC (smaller is better)
+</th>
+<td class="r data">
+126.27
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+AICC (smaller is better)
+</th>
+<td class="r data">
+126.85
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+BIC (smaller is better)
+</th>
+<td class="r data">
+125.49
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+CAIC (smaller is better)
+</th>
+<td class="r data">
+127.49
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+HQIC (smaller is better)
+</th>
+<td class="r data">
+124.18
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Generalized Chi-Square
+</th>
+<td class="r data">
+241.01
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Gener. Chi-Square / DF
+</th>
+<td class="r data">
+10.04
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX8"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Covariance Parameter Estimates">
+<colgroup>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="3" scope="colgroup">
+Covariance Parameter Estimates
+</th>
+</tr>
+<tr>
+<th class="l b header" scope="col">
+Cov Parm
+</th>
+<th class="r b header" scope="col">
+Estimate
+</th>
+<th class="r b header" scope="col">
+Standard<br>Error
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+block
+</th>
+<td class="r data" nowrap="">
+-1.5627
+</td>
+<td class="r data">
+0.5350
+</td>
+</tr>
+<tr>
+<th class="l rowheader" scope="row">
+Residual
+</th>
+<td class="r data">
+10.0419
+</td>
+<td class="r data">
+3.1755
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br> <a name="IDX9"></a>
+<div>
+<div align="center">
+<!--BEGINTABLE-->
+<table class="table" cellspacing="0" cellpadding="7" rules="groups" frame="hsides" summary="Procedure Glimmix: Type III Tests of Fixed Effects">
+<colgroup>
+<col>
+</colgroup>
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="c b header" colspan="5" scope="colgroup">
+Type III Tests of Fixed Effects
+</th>
+</tr>
+<tr>
+<th class="l b header" scope="col">
+Effect
+</th>
+<th class="r b header" scope="col">
+Num DF
+</th>
+<th class="r b header" scope="col">
+Den DF
+</th>
+<th class="r b header" scope="col">
+F Value
+</th>
+<th class="r b header" scope="col">
+Pr &gt; F
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="l rowheader" scope="row">
+trt
+</th>
+<td class="r data">
+5
+</td>
+<td class="r data">
+20
+</td>
+<td class="r data">
+1.18
+</td>
+<td class="r data">
+0.3542
+</td>
+</tr>
+</tbody>
+</table>
+<!--ENDTABLE-->
+</div>
+</div>
+<br>
+</div>
+</section>
+</section>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References:</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-stroup_sas_2018" class="csl-entry" role="listitem">
+Stroup, Walter W., George A. Milliken, Elizabeth A. Claassen, and Russell D. Wolfinger. 2018. <em><span>SAS</span> for <span>Mixed</span> <span>Models</span>: <span>Introduction</span> and <span>Basic</span> <span>Applications</span></em>. Cary, NC: SAS Institute Inc.
+</div>
+<div id="ref-stroup_generalized_2024" class="csl-entry" role="listitem">
+Stroup, Walter W., Marina Ptukhina, and J Garai. 2024. <em>Generalized <span>Linear</span> <span>Mixed</span> <span>Models</span></em>. 2nd ed. New York, NY: Chapman; Hall/CRC Press. <a href="https://doi.org/10.1201/9780429092060">https://doi.org/10.1201/9780429092060</a>.
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

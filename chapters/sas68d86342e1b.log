@@ -1,0 +1,34 @@
+1                                                                                            The SAS System                                                                17:02 Wednesday, July 3, 2024
+
+NOTE: Copyright (c) 2016 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M5) 
+      Licensed to UNIVERSITY OF IDAHO - SFA T&R, Site 70082553.
+NOTE: This session is executing on the X64_10PRO  platform.
+
+
+
+NOTE: Updated analytical products:
+      
+      SAS/STAT 14.3
+      SAS/ETS 14.3
+      SAS/OR 14.3
+      SAS/IML 14.3
+      SAS/QC 14.3
+
+NOTE: Additional host information:
+
+ X64_10PRO WIN 10.0.19041  Workstation
+
+NOTE: SAS initialization used:
+      real time           0.49 seconds
+      cpu time            0.32 seconds
+      
+
+NOTE: AUTOEXEC processing beginning; file is C:\Users\jpiaskowski\Documents\git\glmm-guide\chapters\autoexec.sas.
+
+
+NOTE: The data set WORK.EXAMPLE1DATA has 30 observations and 3 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.02 seconds
+      cpu time            0.01 seconds
+      

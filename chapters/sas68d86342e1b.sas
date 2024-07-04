@@ -1,0 +1,10 @@
+OPTIONS NONUMBER NODATE PAGESIZE = MAX FORMCHAR = '|----|+|---+=|-/<>*' FORMDLIM=' ';title;
+ods noproctitle;
+ods listing close;
+ods graphics /imagename=' unnamed-chunk-15 ' ;
+ods html gpath='  ' file=' sas68d86342e1b.html ' (no_top_matter no_bottom_matter) style=journal;
+proc glimmix data=Example1Data nobound;
+   class block trt;
+   model y = trt;
+   random block;
+run;
