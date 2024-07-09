@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>glmm-guide - Blank Template</title>
+<title>An Atlas of GLMM Challenges - How to Prepare</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,6 +20,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -30,6 +64,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
+<link href="../chapters/example-01.html" rel="next">
+<link href="../chapters/introduction.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -71,7 +107,7 @@ ul.task-list li input[type="checkbox"] {
 <link rel="stylesheet" href="../styles.css">
 </head>
 
-<body class="nav-fixed">
+<body class="nav-sidebar docked nav-fixed">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -79,7 +115,7 @@ ul.task-list li input[type="checkbox"] {
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="../index.html">
-    <span class="navbar-title">glmm-guide</span>
+    <span class="navbar-title">An Atlas of GLMM Challenges</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -87,43 +123,113 @@ ul.task-list li input[type="checkbox"] {
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
-            <ul class="navbar-nav navbar-nav-scroll me-auto">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="../index.html"> 
-<span class="menu-text">Home</span></a>
+    <a class="nav-link" href="https://nccc170.org/"> 
+<span class="menu-text">NCCC-170</span></a>
   </li>  
-  <li class="dropdown-header">
- <span class="menu-text">about.qmd</span></li>
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/NCCC170/glmm-guide"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
 </ul>
           </div> <!-- /navcollapse -->
           <div class="quarto-navbar-tools">
 </div>
       </div> <!-- /container-fluid -->
     </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/preparation.html">Instructions</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
 </header>
 <!-- content -->
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/introduction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/preparation.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Instructions</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Example 1: Negative Variance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/example-01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Problem Description</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/example-01-r.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">R solution</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/example-01-sas.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SAS solution</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
         <nav id="TOC" role="doc-toc" class="toc-active">
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#research-problem" id="toc-research-problem" class="nav-link active" data-scroll-target="#research-problem">Research Problem</a></li>
-  <li><a href="#data-generation-process" id="toc-data-generation-process" class="nav-link" data-scroll-target="#data-generation-process">Data Generation Process</a></li>
-  <li><a href="#statistical-model" id="toc-statistical-model" class="nav-link" data-scroll-target="#statistical-model">Statistical Model</a></li>
-  <li><a href="#glmm-challenges-in-detail" id="toc-glmm-challenges-in-detail" class="nav-link" data-scroll-target="#glmm-challenges-in-detail">GLMM Challenge(s) in Detail</a></li>
-  <li><a href="#analytical-solution" id="toc-analytical-solution" class="nav-link" data-scroll-target="#analytical-solution">Analytical Solution</a></li>
+  <li><a href="#data" id="toc-data" class="nav-link active" data-scroll-target="#data">Data</a></li>
+  <li><a href="#system-requirements" id="toc-system-requirements" class="nav-link" data-scroll-target="#system-requirements">System Requirements</a>
+  <ul class="collapse">
+  <li><a href="#sas" id="toc-sas" class="nav-link" data-scroll-target="#sas">SAS</a></li>
+  <li><a href="#r" id="toc-r" class="nav-link" data-scroll-target="#r">R</a></li>
+  </ul></li>
   </ul>
-</nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/NCCC170/glmm-guide/blob/main/chapters/preparation.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/NCCC170/glmm-guide/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Blank Template</h1>
+<h1 class="title">How to Prepare</h1>
 </div>
 
 
@@ -140,35 +246,68 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
+<p>You are welcome to read this resource, but here are instructions if you want to run the code yourself and insepct the results.</p>
+<section id="data" class="level2">
+<h2 class="anchored" data-anchor-id="data">Data</h2>
+<p>All data sets can be downloaded from <a href="https://github.com/NCCC170/glmm-guide/tree/main/data">here</a>.</p>
+</section>
+<section id="system-requirements" class="level2">
+<h2 class="anchored" data-anchor-id="system-requirements">System Requirements</h2>
+<section id="sas" class="level3">
+<h3 class="anchored" data-anchor-id="sas">SAS</h3>
+<p>SAS v9.4</p>
+</section>
+<section id="r" class="level3">
+<h3 class="anchored" data-anchor-id="r">R</h3>
+<p>R v4.4 or higher. Earlier versions may work but they have not been tested. Below is the complete list of packages used in these tutorials. You may install packages as they are used or install all in advance.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Package</th>
+<th>Versions</th>
+<th>purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://CRAN.R-project.org/package=lme4">lme4</a></td>
+<td>&gt;= 1.1-35.5</td>
+<td>standard mixed modelling</td>
+</tr>
+<tr class="even">
+<td><a href="https://CRAN.R-project.org/package=nlme">nlme</a></td>
+<td>&gt;= 3.1-164</td>
+<td>mixed modelling with specialized covariance structures</td>
+</tr>
+<tr class="odd">
+<td><a href="https://CRAN.R-project.org/package=glmmTMB">glmmTMB</a></td>
+<td>&gt;= 1.1.9</td>
+<td>generalized linear mixed modelling</td>
+</tr>
+<tr class="even">
+<td><a href="https://CRAN.R-project.org/package=DHARMa">DHARMa</a></td>
+<td>&gt;= 0.4.6</td>
+<td>residual checking for GLMMs</td>
+</tr>
+<tr class="odd">
+<td><a href="https://rvlenth.github.io/emmeans/">emmeans</a></td>
+<td>&gt;= 1.10.2</td>
+<td>estimating marginal means</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+<section id="to-install-all-packages" class="level4">
+<h4 class="anchored" data-anchor-id="to-install-all-packages">To install all packages:</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pkg_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="st">"lme4"</span>, <span class="st">"nlme"</span>, <span class="st">"DHARMa"</span>, <span class="st">"emmeans"</span>, <span class="st">"glmmTMB"</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">setdiff</span>(packages, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>())))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="callout-title-container flex-fill">
-GLMM Challenge
-</div>
-</div>
-<div class="callout-body-container callout-body">
 
-</div>
-</div>
-<section id="research-problem" class="level2">
-<h2 class="anchored" data-anchor-id="research-problem">Research Problem</h2>
-</section>
-<section id="data-generation-process" class="level2">
-<h2 class="anchored" data-anchor-id="data-generation-process">Data Generation Process</h2>
-</section>
-<section id="statistical-model" class="level2">
-<h2 class="anchored" data-anchor-id="statistical-model">Statistical Model</h2>
-</section>
-<section id="glmm-challenges-in-detail" class="level2">
-<h2 class="anchored" data-anchor-id="glmm-challenges-in-detail">GLMM Challenge(s) in Detail</h2>
-</section>
-<section id="analytical-solution" class="level2">
-<h2 class="anchored" data-anchor-id="analytical-solution">Analytical Solution</h2>
 
-
+</section>
+</section>
 </section>
 
 </main> <!-- /main -->
@@ -581,9 +720,21 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   }
 });
 </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/introduction.html" class="pagination-link" aria-label="Introduction">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Introduction</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/example-01.html" class="pagination-link" aria-label="Problem Description">
+        <span class="nav-page-text">Problem Description</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
 </div> <!-- /content -->
 
 
 
 
-</body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/NCCC170/glmm-guide/blob/main/chapters/preparation.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/NCCC170/glmm-guide/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
