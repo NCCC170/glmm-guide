@@ -1,0 +1,40 @@
+---
+title: "How to Prepare"
+---
+
+You are welcome to read this resource, but here are instructions if you want to run the code yourself and insepct the results. 
+
+## Data
+
+All data sets can be downloaded from [here](https://github.com/NCCC170/glmm-guide/tree/main/data). 
+
+## System Requirements
+
+### SAS
+
+SAS v9.4
+
+### R
+
+R v4.4 or higher. Earlier versions may work but they have not been tested. Below is the complete list of packages used in these tutorials. You may install packages as they are used or install all in advance. 
+
+| Package   |     Versions    | purpose   |
+|---------------|-------|--------------------------|
+|[lme4](https://CRAN.R-project.org/package=lme4)   | >= 1.1-35.5   |   standard mixed modelling  |
+| [nlme](https://CRAN.R-project.org/package=nlme)    | >= 3.1-164    |  mixed modelling with specialized covariance structures |
+| [glmmTMB](https://CRAN.R-project.org/package=glmmTMB)   |   >= 1.1.9  | generalized linear mixed modelling    |
+| [DHARMa](https://CRAN.R-project.org/package=DHARMa)    |   >= 0.4.6    | residual checking for GLMMs   |
+| [emmeans](https://rvlenth.github.io/emmeans/)   |   >= 1.10.2   | estimating marginal means   |
+ 
+ <br>
+
+#### To install all packages:
+
+
+```{r, eval=FALSE}
+pkg_list <- list("lme4", "nlme", "DHARMa", "emmeans", "glmmTMB")
+
+install.packages(setdiff(packages, rownames(installed.packages())))
+```
+
+
