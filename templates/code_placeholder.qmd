@@ -1,0 +1,16 @@
+---
+title: "code placeholder"
+---
+
+
+```{r collapse=TRUE, engine="sashtml", collectcode=TRUE, engine.path=saspath, include=TRUE, engine.opts=sasopts, comment="", eval=FALSE, echo=FALSE}
+
+filename CRD url "https://github.com/NCCC170/glmm-guide/raw/main/data/example_01.csv";
+
+data CRD;
+    infile CRD firstobs=2 delimiter=',';
+    input inf trt$ row col;
+  	informat inf has_NA.;
+    if inf=. then delete;
+run;
+```

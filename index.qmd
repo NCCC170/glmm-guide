@@ -1,20 +1,45 @@
 ---
-title: "GLMM Guide"
+title: "About this Guide"
 author: "NCCC-170 Group"
 ---
 
-#### Contributors:
-
-Nora Bello
-Walter Stroup
-Julia Piaskowski
-....[all the rest]
 
 
+Herein is guide to particular challenging issues when fitting GLMMs. We have assembled 15 challenges and provided analytical solutions and code examples in SAS and R.These examples are largely drawn from 
 
-[[Front page matter]]
+## Examples
 
-### About this Resource
+1. Negative variance component estimation for block effects for an RCBD experiment. 
 
-### System Requirements
+1. Overdispersion and choice of inference space and estimation method for count data; and how to handle ripple effects on bias for estimates and inferential statistics. 
 
+1. Covariance structures and bias correction for a completely randomized experiment with repeated measures and a Gaussian response variable. 
+
+1. Covariance structures and bias correction for a CRD with repeated measures and a binomial response variable. Additionally, challenges of choice of inference space: conditional vs. marginal model specification and method of estimation. 
+
+1. RCBD with substantial within-block heterogeneity due to large block size; how to address spatial variability with smoothing splines.
+
+1. How to handle zero-inflated count data including Poisson and negative binomial model. Nonlinear processes,  overdispersion, mixture distribution and choice of inference space and estimation method.
+
+1.  Continuous proportion data with meaningful zeroes and/or ones. Beta hurdle model with random effects. 
+
+1. Ordinal multinomial data (IBD) using a cumulative logit model with random effect and the proportional odds assumption is met.
+
+1. Ordinal multinomial data (RCBD) using a cumulative logit model with random effect and the proportional odds assumption is not met.
+
+1. GLMM-based precision analysis. Comparison between competing designs with same sample size but optimized for different objectives
+
+1. GLMM-based power analyses. 
+
+1. Longitudinal data with time series sine wave regression and standard explanatory covariates. Model with smoothing splines.
+
+1. Repeated measures for zero-inflated data (RCBD). 
+
+
+
+## Contributors:
+
+- ***Nora Bello***, *USDA-ARS*
+- ***Walter Stroup***, *University of Nebraska (emeritus)*
+- ***Julia Piaskowski***, *University of Idaho*
+- ***....[all the rest]***
