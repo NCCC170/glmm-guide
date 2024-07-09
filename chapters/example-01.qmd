@@ -3,11 +3,9 @@ title: "Example 1: RCBD & Negative Block Effects"
 bibliography: ../references.bib
 ---
 
-```{r,echo=FALSE, include=FALSE, message=FALSE}
+```{r,include=FALSE, eval=TRUE}
 library(rmarkdown); library(kableExtra)
 ```
-
-# R Solution
 
 ::: callout-note
 ## GLMM Challenge
@@ -31,19 +29,21 @@ table1 <- data.frame(
   col2 = c( 4, "", 25, 29),
   col3 = c("", "Treatment", "", ""),
   col4 = c("", 5, "", ""),
-  col5 = c("Block", "Treatment", "Unit(block)|Trt*", "Total"),
+  col5 = c("Block", "Treatment", expression("Unit(block)|Trt"^1), "Total"),
   col6 = c(4, 5, '25-5=20', 29)
 )
 
-kable(table1, col.names = NULL, booktabs = TRUE, format = "html") |> 
+
+
+kable(table1, col.names = NULL,  format = "html") |> 
   add_header_above(rep(c("Source", "df"), 3), align = "l") |> 
   add_header_above(c("Study Design" = 2, "Treatment Design" = 2, "Combined" = 2)) |> 
   row_spec(4, bold = TRUE) |> 
   kable_styling(full_width = TRUE, position = "center") |> 
-  footnote("*Unit-within-block effects after accounting for treatment effects.", general_title = "")
+  footnote(number = "Unit-within-block effects after accounting for treatment effects.")
 ```
 
-*\*Unit-within-block effects after accounting for treatment effects.*
+
 
 ::: {.callout-caution collapse="false"}
 ## Important note
@@ -97,7 +97,6 @@ y_{4j} \\
 y_{5j} \\
 y_{6j}
 \end{bmatrix} \sim MVN 
-
 \begin{pmatrix} 0, 
 \begin{bmatrix} 
     \sigma^2+\sigma_{CS} & \sigma_{CS} & \dots  &\sigma_{CS}\\
@@ -105,8 +104,7 @@ y_{6j}
        &  &  \ddots & \sigma_{CS} \\
       & & & \sigma^2+\sigma_{CS} 
     \end{bmatrix}
-\end{pmatrix}
-$$
+\end{pmatrix} $$
 
 
 2. Fit the model allowing the variance components to become negative. This option is available in SAS but not R. 

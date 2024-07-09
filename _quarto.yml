@@ -9,8 +9,10 @@ website:
   title: "An Atlas of GLMM Challenges"
   repo-url: https://github.com/NCCC170/glmm-guide
   repo-actions: [source, issue]
+  image: "img/nccc_logo.png"
   search: true
   page-navigation: true
+  open-graph: true
   
   navbar:
     right:
@@ -22,6 +24,10 @@ website:
   sidebar: 
     width: "300px"
     style: "docked"
+    logo: "img/nccc_logo.png"
+    logo-href: index.qmd
+    pinned: false
+    align: center
     search: true
     collapse: true
     contents: 
