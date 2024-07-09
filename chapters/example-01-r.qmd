@@ -1,0 +1,85 @@
+---
+title: "Example 1: RCBD & Negative Block Effects"
+subtitle: "Solution in R"
+bibliography: ../references.bib
+---
+
+# R Solution
+
+::: callout-note
+## GLMM Challenge
+
+How to handle negative variance component estimates for block effects.
+:::
+
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(here); library(nlme); library(performance); library(lme4)
+library(emmeans)
+```
+
+## Import Data and Examine
+
+```{r}
+example_1 <- read.csv(here::here("data", "example_01.csv")) 
+
+example_1$Trt <- as.factor(example_1$Trt)
+example_1$Block <- as.factor(example_1$Block)
+```
+
+```{r}
+table(example_1$Block, example_1$Trt)
+hist(example_1$Y)
+```
+
+## Original Analysis
+
+*Note that the following two models give the same results.*
+
+```{r}
+example1_m1 <- lme4::lmer(Y ~ Trt + (1|Block),
+                   data = example_1,
+                   REML = TRUE)
+```
+
+```{r, echo=TRUE, eval=FALSE}
+example1_m1 <- lme(Y ~ Trt,
+                   random = ~1|Block,
+                   data = example_1,
+                   method = "REML")
+```
+
+Examine variance components and test for singularity (i.e. a zero variance component)
+
+```{r}
+print(VarCorr(example1_m1), comp = "Variance")
+check_singularity(example1_m1)
+```
+
+## Alternative Approach 1
+
+Fit the model using a compound symmetry variance structure (`corCompSymm()`), which will allow negative correlations within groups.
+
+```{r}
+example1_m2 <- gls(Y ~ Trt, 
+                   data = example_1,
+                   method = "REML",
+                   corr = corCompSymm(form = ~ 1|Block, fixed = FALSE))
+```
+
+Check output:
+
+```{r}
+summary(example1_m2)
+check_singularity(example1_m2)
+```
+
+
+Compare results from ANOVA:
+
+```{r}
+joint_tests(example1_m1)
+joint_tests(example1_m2)
+```
+

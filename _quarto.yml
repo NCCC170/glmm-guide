@@ -1,19 +1,51 @@
 project:
   type: website
+  output-dir: _site
+  render:
+    - "*.qmd"
+    - "!templates/"
 
 website:
-  title: "glmm-guide"
+  title: "An Atlas of GLMM Challenges"
+  repo-url: https://github.com/NCCC170/glmm-guide
+  repo-actions: [source, issue]
+  search: true
+  page-navigation: true
+  
   navbar:
-    left:
-      - href: index.qmd
-        text: Home
-      - about.qmd
+    right:
+      - href: https://nccc170.org/
+        text: NCCC-170
+      - icon: github
+        href: https://github.com/NCCC170/glmm-guide
+
+  sidebar: 
+    width: "300px"
+    style: "docked"
+    search: true
+    collapse: true
+    contents: 
+      - href: chapters/introduction.qmd
+        text: Introduction
+      - href: chapters/preparation.qmd
+        text: Instructions
+      - section: "Example 1: Negative Variance"
+        contents: 
+          - href: chapters/example-01.qmd
+            text: "Problem Description"
+          - href: chapters/example-01-r.qmd
+            text: "R solution"
+          - href: chapters/example-01-sas.qmd
+            text: "SAS solution"
+
 
 format:
   html:
-    theme: cosmo
+    theme: litera
     css: styles.css
     toc: true
+    code-copy: true
+    code-overflow: wrap
 
 
 
