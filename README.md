@@ -20,7 +20,6 @@ All plain scripts, either as .R, or .SAS files (at this time). These are a strip
 This is largely following the convention of the data files naming system, with an "_R" or "_SAS" appended to the file names. 
 
 
-
 ### `chapters/`
 
 A filled out template, one for each example, working out the design process, the . All files should be named as thus: 
@@ -29,12 +28,18 @@ A filled out template, one for each example, working out the design process, the
 
 ### All other files
 
-***Please*** do not alter any of these files.
+***Please*** do not alter any of these files. The only exception is 'references.bib' - please add references to that as needed, being careful to avoid duplicate entries. 
 
+### To View the Rendered webpage
+
+1. Clone the repository.
+2. Navigate to the `_site` subdirectory.
+3. open 'index.html' which should display a rendered version of the website locally on your default browser. The URL should look something like this: 'file:///Users/juliapiaskowski/Documents/Git/glmm-guide/_site/index.html' (but specific to your system). 
+
+You can also attempt to build this locally using `quarto::quarto_serve()` in an R session, but you will also need to have SAS installed locally and the path to your SAS executable correct. 
 
 ### How to Contribute
 
-We each are working on an example, starting with an example file, creating a .
 
 #### If you want to work with GitHub and makes pull requests 
 
@@ -47,7 +52,7 @@ We each are working on an example, starting with an example file, creating a .
 7. Push your changes to your GitHub repo fork
 8. If needed, sync your fork with the NCCC170 version of the repo
 9. Open a pull request for your changed with the NCCC170 version
-10. Wait for the magic to happen (your changes will likel6y be accepted pending no merge conflicts)
+10. Wait for the magic to happen (your changes will likely be accepted pending no merge conflicts)
 11. Communicate with team: let them know you are finished with this task. If relevant, close the open issue. 
 
 To repeat:
