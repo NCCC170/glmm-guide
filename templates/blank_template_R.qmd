@@ -1,0 +1,51 @@
+---
+title: "Example X: Some Challenge of the Ages"
+subtitle: "Solution in R"
+hightlight-style: atom-one
+---
+
+
+::: callout-note
+## GLMM Challenge
+
+< !-- paste in the challenge from the problem description --/> 
+:::
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+# put all library calls here
+library(here); 
+```
+
+## Import Data and Examine
+
+```{r}
+# import data and do all upfront data manipulation here
+
+example_1 <- read.csv(here::here("data", "example_XX.csv")) 
+
+```
+
+< !-- do basic exploration (histograms, cross-tabs) --/> 
+
+```{r}
+
+```
+
+-----
+
+< !-- if there is only one analytical approach, consolidate these headings under '## Analytical Approach' --/> 
+
+## Original Analysis
+
+
+
+-----
+
+## Alternative Approach
+
+
+
+< !-- optional: compare models --/> 
+
+

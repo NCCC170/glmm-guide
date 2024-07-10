@@ -1,0 +1,55 @@
+---
+title: "Example X: Some Challenge of the Ages"
+subtitle: "Solution in SAS"
+css: [../sas.css]
+---
+
+
+```{r,echo=FALSE, include=FALSE, message=FALSE}
+require(SASmarkdown)
+saspath <- "C:/Program Files/SASHome/SASFoundation/9.4/sas.exe"
+sasopts <- "-nosplash -ls 200"
+knitr::opts_chunk$set(engine.path=list(sas=saspath, saslog=saspath),
+                  engine.opts=list(sas=sasopts, saslog=sasopts), 
+                  comment=NA)
+```
+
+::: callout-note
+## GLMM Challenge
+
+< !-- paste in the challenge from the problem description --/> 
+:::
+
+
+## Import data
+
+< !-- don't paste in data, import it --/> 
+
+```{r collapse=TRUE, engine="sashtml", engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+
+
+```
+
+-----
+
+< !-- if there is only one analytical approach, consolidate these headings under '## Analytical Approach' --/> 
+
+## Original Analysis
+
+```{r engine="sashtml", engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+ 
+```
+
+-----
+
+## Alternative Approach
+
+Fit the model using a compound symmetry variance structure, which will allow negative correlations within groups.
+
+```{r engine="sashtml", engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+
+
+```
+
+
+
