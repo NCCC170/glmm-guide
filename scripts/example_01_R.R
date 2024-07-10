@@ -8,7 +8,11 @@
 # Source: SAS for Mixed Models by Stroup, Milliken, Claassen, Wolfinger, 2018.
 # 	Chp2, Section 2.5:
 
-# load libraries
+# Example X: 
+# Source: SAS for Mixed Models by Stroup, Milliken, Claassen, Wolfinger, 2018.
+# Chp2, Section 2.5:
+
+############ Load libraries ############
 
 library(readxl)
 library(lme4)
@@ -16,12 +20,20 @@ library(performance)
 library(nlme) 
 library(emmeans)
 
-# load Data Set:
+
+############ Import Data Set ############
+
 Example1_Data <- read.csv("data/example_01.csv")
+
+############ Data checks/exploration ############
 
 str(Example1_Data)
 cols = c("Block", "Trt")
 Example1_Data[cols] <- lapply(Example1_Data[cols], factor)  # Reformat variables as factors
+
+
+
+############ Analysis ############
 
 # Problem: Negative VC estimates
 Example1_MxM <- lmer(Y ~ (1 | Block) + Trt, Example1_Data, REML = TRUE)

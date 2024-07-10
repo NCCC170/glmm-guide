@@ -7,18 +7,18 @@
 # Source: SAS for Mixed Models by Stroup, Milliken, Claassen, Wolfinger, 2018.
 # Chp2, Section 2.5:
 
-# Load libraries
+############ Load libraries ############
 
 
 
-# Import Data Set:
+############ Import Data Set ############
 
 
 
-# Data checks/exploration
+############ Data checks/exploration ############
 
 
 
-# Analysis
+############ Analysis ############
 
 
