@@ -21,7 +21,27 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="site_libs/quarto-nav/quarto-nav.js"></script>
@@ -70,6 +90,10 @@ ul.task-list li input[type="checkbox"] {
 
 
 <link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="An Atlas of GLMM Challenges - About this Guide">
+<meta property="og:description" content="">
+<meta property="og:image" content="img/nccc_logo.png">
+<meta property="og:site_name" content="An Atlas of GLMM Challenges">
 </head>
 
 <body class="nav-sidebar docked nav-fixed">
@@ -90,11 +114,11 @@ ul.task-list li input[type="checkbox"] {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="https://nccc170.org/"> 
+    <a class="nav-link" href="https://nccc170.org/" target="_blank"> 
 <span class="menu-text">NCCC-170</span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/NCCC170/glmm-guide"> <i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/NCCC170/glmm-guide" target="_blank"> <i class="bi bi-github" role="img">
 </i> 
 <span class="menu-text"></span></a>
   </li>  
@@ -122,6 +146,11 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-center sidebar-header">
+      <a href="./index.html" class="sidebar-logo-link">
+      <img src="./img/nccc_logo.png" alt="" class="sidebar-logo py-0 d-lg-inline d-none">
+      </a>
+      </div>
         <div class="mt-2 flex-shrink-0 align-items-center">
         <div class="sidebar-search">
         <div id="quarto-search" class="" title="Search"></div>
@@ -182,6 +211,7 @@ ul.task-list li input[type="checkbox"] {
   <ul>
   <li><a href="#examples" id="toc-examples" class="nav-link active" data-scroll-target="#examples">Examples</a></li>
   <li><a href="#contributors" id="toc-contributors" class="nav-link" data-scroll-target="#contributors">Contributors:</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/NCCC170/glmm-guide/blob/main/index.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/NCCC170/glmm-guide/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -200,7 +230,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>NCCC-170 Group </p>
+             <p><a href="https://nccc170.org/">NCCC-170 Group</a> </p>
           </div>
   </div>
     
@@ -213,7 +243,7 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Herein is guide to particular challenging issues when fitting GLMMs. We have assembled 15 challenges and provided analytical solutions and code examples in SAS and R.These examples are largely drawn from</p>
+<p>Herein is guide to particular challenging issues when fitting GLMMs. We have assembled 15 challenges and provided analytical solutions and code examples in SAS and R. These examples are largely drawn from <em>Generalized Linear Mixed Models</em> (<span class="citation" data-cites="stroup_generalized_2024">Stroup, Ptukhina, and Garai (<a href="#ref-stroup_generalized_2024" role="doc-biblioref">2024</a>)</span>) with some additional examples from real world analytical issues we have encountered.</p>
 <section id="examples" class="level2">
 <h2 class="anchored" data-anchor-id="examples">Examples</h2>
 <ol type="1">
@@ -235,11 +265,19 @@ ul.task-list li input[type="checkbox"] {
 <section id="contributors" class="level2">
 <h2 class="anchored" data-anchor-id="contributors">Contributors:</h2>
 <ul>
-<li><strong><em>Nora Bello</em></strong>, <em>USDA-ARS</em></li>
-<li><strong><em>Walter Stroup</em></strong>, <em>University of Nebraska (emeritus)</em></li>
-<li><strong><em>Julia Piaskowski</em></strong>, <em>University of Idaho</em></li>
-<li><strong><em>….[all the rest]</em></strong></li>
+<li>Nora Bello, <em>USDA-ARS</em></li>
+<li>Walter Stroup, <em>University of Nebraska (emeritus)</em></li>
+<li>Julia Piaskowski, <em>University of Idaho</em></li>
+<li>….[all the rest]</li>
 </ul>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-stroup_generalized_2024" class="csl-entry" role="listitem">
+Stroup, Walter W., Marina Ptukhina, and J Garai. 2024. <em>Generalized <span>Linear</span> <span>Mixed</span> <span>Models</span></em>. 2nd ed. New York, NY: Chapman; Hall/CRC Press. <a href="https://doi.org/10.1201/9780429092060">https://doi.org/10.1201/9780429092060</a>.
+</div>
+</div>
 
 
 </section>

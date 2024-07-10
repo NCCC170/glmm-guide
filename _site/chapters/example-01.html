@@ -124,6 +124,10 @@ window.Quarto = {
 </script>
 
 <link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="An Atlas of GLMM Challenges - Example 1: RCBD &amp; Negative Block Effects">
+<meta property="og:description" content="">
+<meta property="og:image" content="img/nccc_logo.png">
+<meta property="og:site_name" content="An Atlas of GLMM Challenges">
 </head>
 
 <body class="nav-sidebar docked nav-fixed">
@@ -144,11 +148,11 @@ window.Quarto = {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="https://nccc170.org/"> 
+    <a class="nav-link" href="https://nccc170.org/" target="_blank"> 
 <span class="menu-text">NCCC-170</span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/NCCC170/glmm-guide"> <i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/NCCC170/glmm-guide" target="_blank"> <i class="bi bi-github" role="img">
 </i> 
 <span class="menu-text"></span></a>
   </li>  
@@ -176,6 +180,11 @@ window.Quarto = {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-center sidebar-header">
+      <a href="../index.html" class="sidebar-logo-link">
+      <img src="../img/nccc_logo.png" alt="" class="sidebar-logo py-0 d-lg-inline d-none">
+      </a>
+      </div>
         <div class="mt-2 flex-shrink-0 align-items-center">
         <div class="sidebar-search">
         <div id="quarto-search" class="" title="Search"></div>
@@ -234,15 +243,12 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#r-solution" id="toc-r-solution" class="nav-link active" data-scroll-target="#r-solution">R Solution</a>
-  <ul class="collapse">
-  <li><a href="#study-design" id="toc-study-design" class="nav-link" data-scroll-target="#study-design">Study Design</a></li>
+  <li><a href="#study-design" id="toc-study-design" class="nav-link active" data-scroll-target="#study-design">Study Design</a></li>
   <li><a href="#data-generation-process" id="toc-data-generation-process" class="nav-link" data-scroll-target="#data-generation-process">Data Generation Process</a></li>
   <li><a href="#statistical-model" id="toc-statistical-model" class="nav-link" data-scroll-target="#statistical-model">Statistical Model</a></li>
   <li><a href="#glmm-challenges-in-detail" id="toc-glmm-challenges-in-detail" class="nav-link" data-scroll-target="#glmm-challenges-in-detail">GLMM Challenge(s) in Detail</a></li>
   <li><a href="#solutions" id="toc-solutions" class="nav-link" data-scroll-target="#solutions">Solutions</a></li>
   <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References:</a></li>
-  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/NCCC170/glmm-guide/blob/main/chapters/example-01.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/NCCC170/glmm-guide/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -268,8 +274,6 @@ window.Quarto = {
 </header>
 
 
-<section id="r-solution" class="level1">
-<h1>R Solution</h1>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -360,7 +364,7 @@ df
 <td style="text-align: left;">25</td>
 <td style="text-align: left;"></td>
 <td style="text-align: left;"></td>
-<td style="text-align: left;">Unit(block)|Trt*</td>
+<td style="text-align: left;">Unit(block)|Ttr*</td>
 <td style="text-align: left;">25-5=20</td>
 </tr>
 <tr class="even">
@@ -371,23 +375,15 @@ df
 <td style="text-align: left; font-weight: bold;">Total</td>
 <td style="text-align: left; font-weight: bold;">29</td>
 </tr>
-</tbody><tfoot>
-<tr class="even">
-<td style="text-align: left; padding: 0;"><sup></sup> *Unit-within-block effects after accounting for treatment effects.</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-</tfoot>
-
+</tbody>
 </table>
 
 
 </div>
 </div>
-<p><em>*Unit-within-block effects after accounting for treatment effects.</em></p>
+<div style="font-size: 75%;">
+<p>*Unit-within-block effects after accounting for treatment effects.</p>
+</div>
 <div class="callout callout-style-default callout-caution callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="true" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -440,25 +436,22 @@ Important note
 <li>Fit the model using a compound symmetry variance structure, which will allow negative correlations within groups. This reparametrizes the model as thus:</li>
 </ol>
 <p><span class="math display">\[\eta_{ij} = \eta + \tau_i\]</span></p>
-$$
-<span class="math display">\[\begin{bmatrix}
+<p><span class="math display">\[ \begin{bmatrix}
 y_{1j} \\
 y_{2j} \\
 y_{3j} \\
 y_{4j} \\
 y_{5j} \\
 y_{6j}
-\end{bmatrix}\]</span>
-<p>MVN</p>
-<span class="math display">\[\begin{pmatrix} 0,
+\end{bmatrix} \sim MVN
+\begin{pmatrix} 0,
 \begin{bmatrix}
     \sigma^2+\sigma_{CS} &amp; \sigma_{CS} &amp; \dots  &amp;\sigma_{CS}\\
        &amp; \ddots &amp;   &amp; \vdots\\
        &amp;  &amp;  \ddots &amp; \sigma_{CS} \\
       &amp; &amp; &amp; \sigma^2+\sigma_{CS}
     \end{bmatrix}
-\end{pmatrix}\]</span>
-<p>$$</p>
+\end{pmatrix} \]</span></p>
 <ol start="2" type="1">
 <li>Fit the model allowing the variance components to become negative. This option is available in SAS but not R.</li>
 </ol>
@@ -476,7 +469,6 @@ Stroup, Walter W., Marina Ptukhina, and J Garai. 2024. <em>Generalized <span>Lin
 </div>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->

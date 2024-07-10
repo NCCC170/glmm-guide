@@ -105,6 +105,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="An Atlas of GLMM Challenges - Example 1: RCBD &amp; Negative Block Effects">
+<meta property="og:description" content="Solution in R">
+<meta property="og:image" content="img/nccc_logo.png">
+<meta property="og:site_name" content="An Atlas of GLMM Challenges">
 </head>
 
 <body class="nav-sidebar docked nav-fixed">
@@ -125,11 +129,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="https://nccc170.org/"> 
+    <a class="nav-link" href="https://nccc170.org/" target="_blank"> 
 <span class="menu-text">NCCC-170</span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/NCCC170/glmm-guide"> <i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/NCCC170/glmm-guide" target="_blank"> <i class="bi bi-github" role="img">
 </i> 
 <span class="menu-text"></span></a>
   </li>  
@@ -157,6 +161,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-center sidebar-header">
+      <a href="../index.html" class="sidebar-logo-link">
+      <img src="../img/nccc_logo.png" alt="" class="sidebar-logo py-0 d-lg-inline d-none">
+      </a>
+      </div>
         <div class="mt-2 flex-shrink-0 align-items-center">
         <div class="sidebar-search">
         <div id="quarto-search" class="" title="Search"></div>
@@ -215,12 +224,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#r-solution" id="toc-r-solution" class="nav-link active" data-scroll-target="#r-solution">R Solution</a>
-  <ul class="collapse">
-  <li><a href="#import-data-and-examine" id="toc-import-data-and-examine" class="nav-link" data-scroll-target="#import-data-and-examine">Import Data and Examine</a></li>
+  <li><a href="#import-data-and-examine" id="toc-import-data-and-examine" class="nav-link active" data-scroll-target="#import-data-and-examine">Import Data and Examine</a></li>
   <li><a href="#original-analysis" id="toc-original-analysis" class="nav-link" data-scroll-target="#original-analysis">Original Analysis</a></li>
   <li><a href="#alternative-approach-1" id="toc-alternative-approach-1" class="nav-link" data-scroll-target="#alternative-approach-1">Alternative Approach 1</a></li>
-  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/NCCC170/glmm-guide/blob/main/chapters/example-01-r.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/NCCC170/glmm-guide/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -247,8 +253,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="r-solution" class="level1">
-<h1>R Solution</h1>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -290,6 +294,7 @@ GLMM Challenge
 </div>
 </div>
 </div>
+<hr>
 </section>
 <section id="original-analysis" class="level2">
 <h2 class="anchored" data-anchor-id="original-analysis">Original Analysis</h2>
@@ -321,15 +326,16 @@ GLMM Challenge
 <pre><code>[1] TRUE</code></pre>
 </div>
 </div>
+<hr>
 </section>
 <section id="alternative-approach-1" class="level2">
 <h2 class="anchored" data-anchor-id="alternative-approach-1">Alternative Approach 1</h2>
 <p>Fit the model using a compound symmetry variance structure (<code>corCompSymm()</code>), which will allow negative correlations within groups.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>example1_m2 <span class="ot">&lt;-</span> <span class="fu">gls</span>(Y <span class="sc">~</span> Trt, </span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">data =</span> example_1,</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">method =</span> <span class="st">"REML"</span>,</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">corr =</span> <span class="fu">corCompSymm</span>(<span class="at">form =</span> <span class="sc">~</span> <span class="dv">1</span><span class="sc">|</span>Block, <span class="at">fixed =</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>example1_m2 <span class="ot">&lt;-</span> <span class="fu">gls</span>(Y <span class="sc">~</span> Trt, </span>
+<span id="cb12-2"><a href="#cb12-2"></a>                   <span class="at">data =</span> example_1,</span>
+<span id="cb12-3"><a href="#cb12-3"></a>                   <span class="at">method =</span> <span class="st">"REML"</span>,</span>
+<span id="cb12-4"><a href="#cb12-4"></a>                   <span class="at">corr =</span> <span class="fu">corCompSymm</span>(<span class="at">form =</span> <span class="sc">~</span> <span class="dv">1</span><span class="sc">|</span>Block, <span class="at">fixed =</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Check output:</p>
 <div class="cell">
@@ -379,17 +385,11 @@ Degrees of freedom: 30 total; 24 residual</code></pre>
 <p>Compare results from ANOVA:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">joint_tests</span>(example1_m1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Cannot use mode = "kenward-roger" because *pbkrtest* package is not installed</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Cannot use mode = "satterthwaite" because *lmerTest* package is not installed</code></pre>
-</div>
 <div class="cell-output cell-output-stdout">
-<pre><code> model term df1 df2 F.ratio Chisq p.value
- Trt          5 Inf   1.396  6.98  0.2221</code></pre>
+<pre><code> model term df1 df2 F.ratio p.value
+ Trt          5  20   1.396  0.2681</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">joint_tests</span>(example1_m2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">joint_tests</span>(example1_m2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code> model term df1 df2 F.ratio p.value
  Trt          5  20   1.179  0.3542</code></pre>
@@ -397,7 +397,6 @@ Degrees of freedom: 30 total; 24 residual</code></pre>
 </div>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->
