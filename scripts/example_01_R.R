@@ -13,7 +13,7 @@ library(nlme)
 library(emmeans)
 
 # load Data Set:
-Example1_Data <- read_excel("data/example_01.xlsx")
+Example1_Data <- read.csv("data/example_01.csv")
 
 str(Example1_Data)
 cols = c("Block", "Trt")
