@@ -1,11 +1,12 @@
 ---
 title: "About this Guide"
-author: "NCCC-170 Group"
+author: "[NCCC-170 Group](https://nccc170.org/)"
+bibliography: references.bib
 ---
 
 
 
-Herein is guide to particular challenging issues when fitting GLMMs. We have assembled 15 challenges and provided analytical solutions and code examples in SAS and R.These examples are largely drawn from 
+Herein is guide to particular challenging issues when fitting GLMMs. We have assembled 15 challenges and provided analytical solutions and code examples in SAS and R. These examples are largely drawn from *Generalized Linear Mixed Models* (@stroup_generalized_2024) with some additional examples from real world analytical issues we have encountered. 
 
 ## Examples
 
@@ -39,7 +40,13 @@ Herein is guide to particular challenging issues when fitting GLMMs. We have ass
 
 ## Contributors:
 
-- ***Nora Bello***, *USDA-ARS*
-- ***Walter Stroup***, *University of Nebraska (emeritus)*
-- ***Julia Piaskowski***, *University of Idaho*
-- ***....[all the rest]***
+- Nora Bello, *USDA-ARS*
+- Walter Stroup, *University of Nebraska (emeritus)*
+- Julia Piaskowski, *University of Idaho*
+- ....[all the rest]
+
+## References
+
+::: {#refs}
+:::
+

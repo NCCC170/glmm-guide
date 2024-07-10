@@ -29,20 +29,23 @@ table1 <- data.frame(
   col2 = c( 4, "", 25, 29),
   col3 = c("", "Treatment", "", ""),
   col4 = c("", 5, "", ""),
-  col5 = c("Block", "Treatment", expression("Unit(block)|Trt"^1), "Total"),
+  col5 = c("Block", "Treatment", "Unit(block)|Ttr*", "Total"),
   col6 = c(4, 5, '25-5=20', 29)
 )
-
-
 
 kable(table1, col.names = NULL,  format = "html") |> 
   add_header_above(rep(c("Source", "df"), 3), align = "l") |> 
   add_header_above(c("Study Design" = 2, "Treatment Design" = 2, "Combined" = 2)) |> 
   row_spec(4, bold = TRUE) |> 
-  kable_styling(full_width = TRUE, position = "center") |> 
-  footnote(number = "Unit-within-block effects after accounting for treatment effects.")
-```
+  kable_styling(full_width = TRUE, position = "center")#|> 
+ # footnote("*Unit-within-block effects after accounting for treatment effects.")
 
+```
+::: {style="font-size: 75%;"}
+
+*Unit-within-block effects after accounting for treatment effects.
+
+:::
 
 
 ::: {.callout-caution collapse="false"}

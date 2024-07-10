@@ -1,7 +1,7 @@
 ---
 title: "Example 1: RCBD & Negative Block Effects"
 subtitle: "Solution in SAS"
-css: [../sas.default.css]
+css: [../sas.css]
 ---
 
 
@@ -21,10 +21,10 @@ How to handle negative variance component estimates for block effects.
 :::
 
 
-### Import data
+## Import data
 
 
-```{r collapse=TRUE, engine="sashtml", collectcode=TRUE, engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+```{r collapse=TRUE, engine="sashtml", engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
 data Example1Data;
    input block trt Y;
 datalines;
@@ -61,9 +61,11 @@ datalines;
 ;
 run;
 ```
-### Original Analysis
 
-```{r engine="sashtml", engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+
+## Original Analysis
+
+```{r collapse=TRUE, engine="sashtml",  engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
 proc glimmix data=Example1Data;
    class block trt;
    model y = trt;
@@ -71,11 +73,13 @@ proc glimmix data=Example1Data;
 run;
 ```
 
-### Alternative Approach 1
+
+
+## Alternative Approach 1
 
 Fit the model using a compound symmetry variance structure, which will allow negative correlations within groups.
 
-```{r engine="sashtml", engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+```{r collapse=TRUE, engine="sashtml", engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
 proc glimmix data=Example1Data;
    class block trt;
    model y = trt;
@@ -83,11 +87,13 @@ proc glimmix data=Example1Data;
 run;
 ```
 
-### Alternative Approach 2
+
+
+## Alternative Approach 2
 
 Fit the model allowing the variance componens to become negative. SAS has an option for overriding the restriction on negative variance components.
 
-```{r engine="sashtml", engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+```{r collapse=TRUE, engine="sashtml",  engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
 proc glimmix data=Example1Data nobound;
    class block trt;
    model y = trt;

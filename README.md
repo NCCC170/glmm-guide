@@ -2,10 +2,6 @@
 
 ## Directory Structure
 
-
-
-## Directory Guide
-
 ### `data/`
 
 Where are all data lives: either as .xlsx, .csv or .txt files. All files should be named as thus:
@@ -33,15 +29,8 @@ A filled out template, one for each example, working out the design process, the
 
 ### All other files
 
-Please do not alter any of these files: 
+***Please*** do not alter any of these files.
 
-- `README.md` (this file)
-- `_quarto.yml` (for organizing the table of contents)   
-- `glmm-guide.Rproj` 
-- `index.qmd` (quarto book front page)               
-- `renv/` (a directory, managed automatically by the {renv} package)         
-- `renv.lock` (managed automatically by the {renv} package)      
-- `styles.css`  
 
 ### How to Contribute
 

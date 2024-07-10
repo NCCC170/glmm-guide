@@ -18,8 +18,10 @@ website:
     right:
       - href: https://nccc170.org/
         text: NCCC-170
+        target: _blank
       - icon: github
         href: https://github.com/NCCC170/glmm-guide
+        target: _blank
 
   sidebar: 
     width: "300px"
@@ -47,11 +49,13 @@ website:
 
 format:
   html:
-    theme: litera
+    theme: [litera, styles.scss]
     css: styles.css
     toc: true
     code-copy: true
-    code-overflow: wrap
+    code-line-numbers: false
+
+    
 
 
 
