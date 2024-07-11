@@ -49,8 +49,8 @@ website:
 
 format:
   html:
-    theme: [litera, styles.scss]
-    css: styles.css
+    theme: [litera, css/styles.scss]
+    css: css/styles.css
     toc: true
     code-copy: true
     code-line-numbers: false
