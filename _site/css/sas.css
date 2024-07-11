@@ -1220,14 +1220,14 @@ color:#800080
 }
 .rowheader
 {
-  background-color: #EDF2F9;
   border-bottom-width: 1px;
   border-color: #B0B7BB;
   border-left-width: 0px;
   border-right-width: 1px;
   border-style: solid;
   border-top-width: 0px;
-  color: #112277;
+  color: #112277 !important;
+  background-color: #EDF2F9 !important;
   font-family: 'Avenir Next for SAS', Arial, 'Albany AMT', Helvetica, Helv;
   font-size: 14px;
   font-style: normal;
@@ -1525,6 +1525,12 @@ color:#800080
   border-spacing: 0px;
   border-style: solid;
   border-top-width: 1px;
+}
+.table>thead {
+  border-top-width: 0;
+  border-bottom: 1px solid #b2bac1;
+  background: #edf2f9 !important;
+  color: #112277 !important;
 }
 .top_stacked_value
 {

@@ -24,7 +24,7 @@ How to handle negative variance component estimates for block effects.
 ## Import data
 
 
-```{r collapse=TRUE, engine="sashtml", engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+```{r engine="sashtml",  engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
 data Example1Data;
    input block trt Y;
 datalines;
@@ -65,7 +65,7 @@ run;
 
 ## Original Analysis
 
-```{r collapse=TRUE, engine="sashtml",  engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+```{r engine="sashtml",  engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
 proc glimmix data=Example1Data;
    class block trt;
    model y = trt;
@@ -79,7 +79,7 @@ run;
 
 Fit the model using a compound symmetry variance structure, which will allow negative correlations within groups.
 
-```{r collapse=TRUE, engine="sashtml", engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+```{r engine="sashtml",  engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
 proc glimmix data=Example1Data;
    class block trt;
    model y = trt;
@@ -93,7 +93,7 @@ run;
 
 Fit the model allowing the variance componens to become negative. SAS has an option for overriding the restriction on negative variance components.
 
-```{r collapse=TRUE, engine="sashtml",  engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
+```{r engine="sashtml",  engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
 proc glimmix data=Example1Data nobound;
    class block trt;
    model y = trt;
