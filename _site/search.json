@@ -21,6 +21,13 @@
     "text": "Contributors:\n\nNora Bello, USDA-ARS\nWalter Stroup, University of Nebraska (emeritus)\nJulia Piaskowski, University of Idaho\n….[all the rest]"
   },
   {
+    "objectID": "index.html#references",
+    "href": "index.html#references",
+    "title": "About this Guide",
+    "section": "References",
+    "text": "References\n\n\nStroup, Walter W., Marina Ptukhina, and J Garai. 2024. Generalized Linear Mixed Models. 2nd ed. New York, NY: Chapman; Hall/CRC Press. https://doi.org/10.1201/9780429092060."
+  },
+  {
     "objectID": "chapters/introduction.html",
     "href": "chapters/introduction.html",
     "title": "Purpose",
@@ -48,6 +55,54 @@
     "title": "Example 1: RCBD & Negative Block Effects",
     "section": "",
     "text": "GLMM Challenge\n\n\n\nHow to handle negative variance component estimates for block effects.",
+    "crumbs": [
+      "NCCC-170",
+      "Example 1: Negative Variance",
+      "SAS solution"
+    ]
+  },
+  {
+    "objectID": "chapters/example-01-sas.html#import-data",
+    "href": "chapters/example-01-sas.html#import-data",
+    "title": "Example 1: RCBD & Negative Block Effects",
+    "section": "Import data",
+    "text": "Import data\ndata Example1Data;\n   input block trt Y;\ndatalines;\n1 1 24.739\n1 2 22.719\n1 3 27.247\n1 4 28.45\n1 5 30.202\n1 6 30.422\n2 1 27.921\n2 2 29.419\n2 3 27.025\n2 4 30.467\n2 5 23.334\n2 6 23.299\n3 1 24.064\n3 2 22.945\n3 3 26.169\n3 4 30.414\n3 5 28.661\n3 6 29.571\n4 1 25.102\n4 2 28.342\n4 3 29.337\n4 4 23.714\n4 5 33.414\n4 6 26.563\n5 1 22.352\n5 2 30.348\n5 3 23.798\n5 4 29.197\n5 5 30.625\n5 6 27.528\n;\nrun;",
+    "crumbs": [
+      "NCCC-170",
+      "Example 1: Negative Variance",
+      "SAS solution"
+    ]
+  },
+  {
+    "objectID": "chapters/example-01-sas.html#original-analysis",
+    "href": "chapters/example-01-sas.html#original-analysis",
+    "title": "Example 1: RCBD & Negative Block Effects",
+    "section": "Original Analysis",
+    "text": "Original Analysis\nproc glimmix data=Example1Data;\n   class block trt;\n   model y = trt;\n   random block;\nrun;\n\n\n\n\n\n\n\n\n\n\n\n\n\nModel Information\n\n\n\n\n\n\nData Set\n\n\nWORK.EXAMPLE1DATA\n\n\n\n\nResponse Variable\n\n\nY\n\n\n\n\nResponse Distribution\n\n\nGaussian\n\n\n\n\nLink Function\n\n\nIdentity\n\n\n\n\nVariance Function\n\n\nDefault\n\n\n\n\nVariance Matrix\n\n\nNot blocked\n\n\n\n\nEstimation Technique\n\n\nRestricted Maximum Likelihood\n\n\n\n\nDegrees of Freedom Method\n\n\nContainment\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\nClass Level Information\n\n\n\n\nClass\n\n\nLevels\n\n\nValues\n\n\n\n\n\n\nblock\n\n\n5\n\n\n1 2 3 4 5\n\n\n\n\ntrt\n\n\n6\n\n\n1 2 3 4 5 6\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nNumber of Observations Read\n\n\n30\n\n\n\n\nNumber of Observations Used\n\n\n30\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nDimensions\n\n\n\n\n\n\nG-side Cov. Parameters\n\n\n1\n\n\n\n\nR-side Cov. Parameters\n\n\n1\n\n\n\n\nColumns in X\n\n\n7\n\n\n\n\nColumns in Z\n\n\n5\n\n\n\n\nSubjects (Blocks in V)\n\n\n1\n\n\n\n\nMax Obs per Subject\n\n\n30\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nOptimization Information\n\n\n\n\n\n\nOptimization Technique\n\n\nDual Quasi-Newton\n\n\n\n\nParameters in Optimization\n\n\n1\n\n\n\n\nLower Boundaries\n\n\n1\n\n\n\n\nUpper Boundaries\n\n\n0\n\n\n\n\nFixed Effects\n\n\nProfiled\n\n\n\n\nResidual Variance\n\n\nProfiled\n\n\n\n\nStarting From\n\n\nData\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nIteration History\n\n\n\n\nIteration\n\n\nRestarts\n\n\nEvaluations\n\n\nObjectiveFunction\n\n\nChange\n\n\nMaxGradient\n\n\n\n\n\n\n0\n\n\n0\n\n\n4\n\n\n129.06857357\n\n\n.\n\n\n0\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\nConvergence criterion (ABSGCONV=0.00001) satisfied.\n\n\n\n\n\n\n\n \n\n\n\n\n\nEstimated G matrix is not positive definite.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nFit Statistics\n\n\n\n\n\n\n-2 Res Log Likelihood\n\n\n129.07\n\n\n\n\nAIC (smaller is better)\n\n\n131.07\n\n\n\n\nAICC (smaller is better)\n\n\n131.25\n\n\n\n\nBIC (smaller is better)\n\n\n130.68\n\n\n\n\nCAIC (smaller is better)\n\n\n131.68\n\n\n\n\nHQIC (smaller is better)\n\n\n130.02\n\n\n\n\nGeneralized Chi-Square\n\n\n203.50\n\n\n\n\nGener. Chi-Square / DF\n\n\n8.48\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCovariance Parameter Estimates\n\n\n\n\nCov Parm\n\n\nEstimate\n\n\nStandardError\n\n\n\n\n\n\nblock\n\n\n0\n\n\n.\n\n\n\n\nResidual\n\n\n8.4792\n\n\n2.4477\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nType III Tests of Fixed Effects\n\n\n\n\nEffect\n\n\nNum DF\n\n\nDen DF\n\n\nF Value\n\n\nPr &gt; F\n\n\n\n\n\n\ntrt\n\n\n5\n\n\n20\n\n\n1.40\n\n\n0.2681",
+    "crumbs": [
+      "NCCC-170",
+      "Example 1: Negative Variance",
+      "SAS solution"
+    ]
+  },
+  {
+    "objectID": "chapters/example-01-sas.html#alternative-approach-1",
+    "href": "chapters/example-01-sas.html#alternative-approach-1",
+    "title": "Example 1: RCBD & Negative Block Effects",
+    "section": "Alternative Approach 1",
+    "text": "Alternative Approach 1\nFit the model using a compound symmetry variance structure, which will allow negative correlations within groups.\nproc glimmix data=Example1Data;\n   class block trt;\n   model y = trt;\n   random trt / subject=block type=cs residual v vcorr;\nrun;\n\n\n\n\n\n\n\n\n\n\n\n\n\nModel Information\n\n\n\n\n\n\nData Set\n\n\nWORK.EXAMPLE1DATA\n\n\n\n\nResponse Variable\n\n\nY\n\n\n\n\nResponse Distribution\n\n\nGaussian\n\n\n\n\nLink Function\n\n\nIdentity\n\n\n\n\nVariance Function\n\n\nDefault\n\n\n\n\nVariance Matrix Blocked By\n\n\nblock\n\n\n\n\nEstimation Technique\n\n\nRestricted Maximum Likelihood\n\n\n\n\nDegrees of Freedom Method\n\n\nBetween-Within\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\nClass Level Information\n\n\n\n\nClass\n\n\nLevels\n\n\nValues\n\n\n\n\n\n\nblock\n\n\n5\n\n\n1 2 3 4 5\n\n\n\n\ntrt\n\n\n6\n\n\n1 2 3 4 5 6\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nNumber of Observations Read\n\n\n30\n\n\n\n\nNumber of Observations Used\n\n\n30\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nDimensions\n\n\n\n\n\n\nR-side Cov. Parameters\n\n\n2\n\n\n\n\nColumns in X\n\n\n7\n\n\n\n\nColumns in Z per Subject\n\n\n0\n\n\n\n\nSubjects (Blocks in V)\n\n\n5\n\n\n\n\nMax Obs per Subject\n\n\n6\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nOptimization Information\n\n\n\n\n\n\nOptimization Technique\n\n\nDual Quasi-Newton\n\n\n\n\nParameters in Optimization\n\n\n1\n\n\n\n\nLower Boundaries\n\n\n0\n\n\n\n\nUpper Boundaries\n\n\n0\n\n\n\n\nFixed Effects\n\n\nProfiled\n\n\n\n\nResidual Variance\n\n\nProfiled\n\n\n\n\nStarting From\n\n\nData\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nIteration History\n\n\n\n\nIteration\n\n\nRestarts\n\n\nEvaluations\n\n\nObjectiveFunction\n\n\nChange\n\n\nMaxGradient\n\n\n\n\n\n\n0\n\n\n0\n\n\n4\n\n\n122.27404476\n\n\n.\n\n\n1.11E-10\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\nConvergence criterion (ABSGCONV=0.00001) satisfied.\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nFit Statistics\n\n\n\n\n\n\n-2 Res Log Likelihood\n\n\n122.27\n\n\n\n\nAIC (smaller is better)\n\n\n126.27\n\n\n\n\nAICC (smaller is better)\n\n\n126.85\n\n\n\n\nBIC (smaller is better)\n\n\n125.49\n\n\n\n\nCAIC (smaller is better)\n\n\n127.49\n\n\n\n\nHQIC (smaller is better)\n\n\n124.18\n\n\n\n\nGeneralized Chi-Square\n\n\n241.01\n\n\n\n\nGener. Chi-Square / DF\n\n\n10.04\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nEstimated V Matrix for block 1\n\n\n\n\nRow\n\n\nCol1\n\n\nCol2\n\n\nCol3\n\n\nCol4\n\n\nCol5\n\n\nCol6\n\n\n\n\n\n\n1\n\n\n8.4792\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n\n\n2\n\n\n-1.5627\n\n\n8.4792\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n\n\n3\n\n\n-1.5627\n\n\n-1.5627\n\n\n8.4792\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n\n\n4\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n8.4792\n\n\n-1.5627\n\n\n-1.5627\n\n\n\n\n5\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n8.4792\n\n\n-1.5627\n\n\n\n\n6\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n8.4792\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nEstimated V Correlation Matrix for block 1\n\n\n\n\nRow\n\n\nCol1\n\n\nCol2\n\n\nCol3\n\n\nCol4\n\n\nCol5\n\n\nCol6\n\n\n\n\n\n\n1\n\n\n1.0000\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n\n\n2\n\n\n-0.1843\n\n\n1.0000\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n\n\n3\n\n\n-0.1843\n\n\n-0.1843\n\n\n1.0000\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n\n\n4\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n1.0000\n\n\n-0.1843\n\n\n-0.1843\n\n\n\n\n5\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n1.0000\n\n\n-0.1843\n\n\n\n\n6\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n1.0000\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCovariance Parameter Estimates\n\n\n\n\nCov Parm\n\n\nSubject\n\n\nEstimate\n\n\nStandardError\n\n\n\n\n\n\nCS\n\n\nblock\n\n\n-1.5627\n\n\n0.5350\n\n\n\n\nResidual\n\n\n\n\n10.0419\n\n\n3.1755\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nType III Tests of Fixed Effects\n\n\n\n\nEffect\n\n\nNum DF\n\n\nDen DF\n\n\nF Value\n\n\nPr &gt; F\n\n\n\n\n\n\ntrt\n\n\n5\n\n\n20\n\n\n1.18\n\n\n0.3542",
+    "crumbs": [
+      "NCCC-170",
+      "Example 1: Negative Variance",
+      "SAS solution"
+    ]
+  },
+  {
+    "objectID": "chapters/example-01-sas.html#alternative-approach-2",
+    "href": "chapters/example-01-sas.html#alternative-approach-2",
+    "title": "Example 1: RCBD & Negative Block Effects",
+    "section": "Alternative Approach 2",
+    "text": "Alternative Approach 2\nFit the model allowing the variance componens to become negative. SAS has an option for overriding the restriction on negative variance components.\nproc glimmix data=Example1Data nobound;\n   class block trt;\n   model y = trt;\n   random block;\nrun;\n\n\n\n\n\n\n\n\n\n\n\n\n\nModel Information\n\n\n\n\n\n\nData Set\n\n\nWORK.EXAMPLE1DATA\n\n\n\n\nResponse Variable\n\n\nY\n\n\n\n\nResponse Distribution\n\n\nGaussian\n\n\n\n\nLink Function\n\n\nIdentity\n\n\n\n\nVariance Function\n\n\nDefault\n\n\n\n\nVariance Matrix\n\n\nNot blocked\n\n\n\n\nEstimation Technique\n\n\nRestricted Maximum Likelihood\n\n\n\n\nDegrees of Freedom Method\n\n\nContainment\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\nClass Level Information\n\n\n\n\nClass\n\n\nLevels\n\n\nValues\n\n\n\n\n\n\nblock\n\n\n5\n\n\n1 2 3 4 5\n\n\n\n\ntrt\n\n\n6\n\n\n1 2 3 4 5 6\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nNumber of Observations Read\n\n\n30\n\n\n\n\nNumber of Observations Used\n\n\n30\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nDimensions\n\n\n\n\n\n\nG-side Cov. Parameters\n\n\n1\n\n\n\n\nR-side Cov. Parameters\n\n\n1\n\n\n\n\nColumns in X\n\n\n7\n\n\n\n\nColumns in Z\n\n\n5\n\n\n\n\nSubjects (Blocks in V)\n\n\n1\n\n\n\n\nMax Obs per Subject\n\n\n30\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nOptimization Information\n\n\n\n\n\n\nOptimization Technique\n\n\nDual Quasi-Newton\n\n\n\n\nParameters in Optimization\n\n\n1\n\n\n\n\nLower Boundaries\n\n\n0\n\n\n\n\nUpper Boundaries\n\n\n0\n\n\n\n\nFixed Effects\n\n\nProfiled\n\n\n\n\nResidual Variance\n\n\nProfiled\n\n\n\n\nStarting From\n\n\nData\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nIteration History\n\n\n\n\nIteration\n\n\nRestarts\n\n\nEvaluations\n\n\nObjectiveFunction\n\n\nChange\n\n\nMaxGradient\n\n\n\n\n\n\n0\n\n\n0\n\n\n4\n\n\n122.27404476\n\n\n.\n\n\n1.26E-10\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\nConvergence criterion (ABSGCONV=0.00001) satisfied.\n\n\n\n\n\n\n\n \n\n\n\n\n\nEstimated G matrix is not positive definite.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nFit Statistics\n\n\n\n\n\n\n-2 Res Log Likelihood\n\n\n122.27\n\n\n\n\nAIC (smaller is better)\n\n\n126.27\n\n\n\n\nAICC (smaller is better)\n\n\n126.85\n\n\n\n\nBIC (smaller is better)\n\n\n125.49\n\n\n\n\nCAIC (smaller is better)\n\n\n127.49\n\n\n\n\nHQIC (smaller is better)\n\n\n124.18\n\n\n\n\nGeneralized Chi-Square\n\n\n241.01\n\n\n\n\nGener. Chi-Square / DF\n\n\n10.04\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCovariance Parameter Estimates\n\n\n\n\nCov Parm\n\n\nEstimate\n\n\nStandardError\n\n\n\n\n\n\nblock\n\n\n-1.5627\n\n\n0.5350\n\n\n\n\nResidual\n\n\n10.0419\n\n\n3.1755\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nType III Tests of Fixed Effects\n\n\n\n\nEffect\n\n\nNum DF\n\n\nDen DF\n\n\nF Value\n\n\nPr &gt; F\n\n\n\n\n\n\ntrt\n\n\n5\n\n\n20\n\n\n1.18\n\n\n0.3542",
     "crumbs": [
       "NCCC-170",
       "Example 1: Negative Variance",
@@ -218,60 +273,5 @@
       "NCCC-170",
       "Instructions"
     ]
-  },
-  {
-    "objectID": "chapters/example-01-sas.html#import-data",
-    "href": "chapters/example-01-sas.html#import-data",
-    "title": "Example 1: RCBD & Negative Block Effects",
-    "section": "Import data",
-    "text": "Import data\ndata Example1Data;\n   input block trt Y;\ndatalines;\n1 1 24.739\n1 2 22.719\n1 3 27.247\n1 4 28.45\n1 5 30.202\n1 6 30.422\n2 1 27.921\n2 2 29.419\n2 3 27.025\n2 4 30.467\n2 5 23.334\n2 6 23.299\n3 1 24.064\n3 2 22.945\n3 3 26.169\n3 4 30.414\n3 5 28.661\n3 6 29.571\n4 1 25.102\n4 2 28.342\n4 3 29.337\n4 4 23.714\n4 5 33.414\n4 6 26.563\n5 1 22.352\n5 2 30.348\n5 3 23.798\n5 4 29.197\n5 5 30.625\n5 6 27.528\n;\nrun;",
-    "crumbs": [
-      "NCCC-170",
-      "Example 1: Negative Variance",
-      "SAS solution"
-    ]
-  },
-  {
-    "objectID": "chapters/example-01-sas.html#original-analysis",
-    "href": "chapters/example-01-sas.html#original-analysis",
-    "title": "Example 1: RCBD & Negative Block Effects",
-    "section": "Original Analysis",
-    "text": "Original Analysis\nproc glimmix data=Example1Data;\n   class block trt;\n   model y = trt;\n   random block;\nrun;\n\n\n\n\n\n\n\n\n\n\n\n\n\nModel Information\n\n\n\n\n\n\nData Set\n\n\nWORK.EXAMPLE1DATA\n\n\n\n\nResponse Variable\n\n\nY\n\n\n\n\nResponse Distribution\n\n\nGaussian\n\n\n\n\nLink Function\n\n\nIdentity\n\n\n\n\nVariance Function\n\n\nDefault\n\n\n\n\nVariance Matrix\n\n\nNot blocked\n\n\n\n\nEstimation Technique\n\n\nRestricted Maximum Likelihood\n\n\n\n\nDegrees of Freedom Method\n\n\nContainment\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\nClass Level Information\n\n\n\n\nClass\n\n\nLevels\n\n\nValues\n\n\n\n\n\n\nblock\n\n\n5\n\n\n1 2 3 4 5\n\n\n\n\ntrt\n\n\n6\n\n\n1 2 3 4 5 6\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nNumber of Observations Read\n\n\n30\n\n\n\n\nNumber of Observations Used\n\n\n30\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nDimensions\n\n\n\n\n\n\nG-side Cov. Parameters\n\n\n1\n\n\n\n\nR-side Cov. Parameters\n\n\n1\n\n\n\n\nColumns in X\n\n\n7\n\n\n\n\nColumns in Z\n\n\n5\n\n\n\n\nSubjects (Blocks in V)\n\n\n1\n\n\n\n\nMax Obs per Subject\n\n\n30\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nOptimization Information\n\n\n\n\n\n\nOptimization Technique\n\n\nDual Quasi-Newton\n\n\n\n\nParameters in Optimization\n\n\n1\n\n\n\n\nLower Boundaries\n\n\n1\n\n\n\n\nUpper Boundaries\n\n\n0\n\n\n\n\nFixed Effects\n\n\nProfiled\n\n\n\n\nResidual Variance\n\n\nProfiled\n\n\n\n\nStarting From\n\n\nData\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nIteration History\n\n\n\n\nIteration\n\n\nRestarts\n\n\nEvaluations\n\n\nObjectiveFunction\n\n\nChange\n\n\nMaxGradient\n\n\n\n\n\n\n0\n\n\n0\n\n\n4\n\n\n129.06857357\n\n\n.\n\n\n0\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\nConvergence criterion (ABSGCONV=0.00001) satisfied.\n\n\n\n\n\n\n\n \n\n\n\n\n\nEstimated G matrix is not positive definite.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nFit Statistics\n\n\n\n\n\n\n-2 Res Log Likelihood\n\n\n129.07\n\n\n\n\nAIC (smaller is better)\n\n\n131.07\n\n\n\n\nAICC (smaller is better)\n\n\n131.25\n\n\n\n\nBIC (smaller is better)\n\n\n130.68\n\n\n\n\nCAIC (smaller is better)\n\n\n131.68\n\n\n\n\nHQIC (smaller is better)\n\n\n130.02\n\n\n\n\nGeneralized Chi-Square\n\n\n203.50\n\n\n\n\nGener. Chi-Square / DF\n\n\n8.48\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCovariance Parameter Estimates\n\n\n\n\nCov Parm\n\n\nEstimate\n\n\nStandardError\n\n\n\n\n\n\nblock\n\n\n0\n\n\n.\n\n\n\n\nResidual\n\n\n8.4792\n\n\n2.4477\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nType III Tests of Fixed Effects\n\n\n\n\nEffect\n\n\nNum DF\n\n\nDen DF\n\n\nF Value\n\n\nPr &gt; F\n\n\n\n\n\n\ntrt\n\n\n5\n\n\n20\n\n\n1.40\n\n\n0.2681",
-    "crumbs": [
-      "NCCC-170",
-      "Example 1: Negative Variance",
-      "SAS solution"
-    ]
-  },
-  {
-    "objectID": "chapters/example-01-sas.html#alternative-approach-1",
-    "href": "chapters/example-01-sas.html#alternative-approach-1",
-    "title": "Example 1: RCBD & Negative Block Effects",
-    "section": "Alternative Approach 1",
-    "text": "Alternative Approach 1\nFit the model using a compound symmetry variance structure, which will allow negative correlations within groups.\nproc glimmix data=Example1Data;\n   class block trt;\n   model y = trt;\n   random trt / subject=block type=cs residual v vcorr;\nrun;\n\n\n\n\n\n\n\n\n\n\n\n\n\nModel Information\n\n\n\n\n\n\nData Set\n\n\nWORK.EXAMPLE1DATA\n\n\n\n\nResponse Variable\n\n\nY\n\n\n\n\nResponse Distribution\n\n\nGaussian\n\n\n\n\nLink Function\n\n\nIdentity\n\n\n\n\nVariance Function\n\n\nDefault\n\n\n\n\nVariance Matrix Blocked By\n\n\nblock\n\n\n\n\nEstimation Technique\n\n\nRestricted Maximum Likelihood\n\n\n\n\nDegrees of Freedom Method\n\n\nBetween-Within\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\nClass Level Information\n\n\n\n\nClass\n\n\nLevels\n\n\nValues\n\n\n\n\n\n\nblock\n\n\n5\n\n\n1 2 3 4 5\n\n\n\n\ntrt\n\n\n6\n\n\n1 2 3 4 5 6\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nNumber of Observations Read\n\n\n30\n\n\n\n\nNumber of Observations Used\n\n\n30\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nDimensions\n\n\n\n\n\n\nR-side Cov. Parameters\n\n\n2\n\n\n\n\nColumns in X\n\n\n7\n\n\n\n\nColumns in Z per Subject\n\n\n0\n\n\n\n\nSubjects (Blocks in V)\n\n\n5\n\n\n\n\nMax Obs per Subject\n\n\n6\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nOptimization Information\n\n\n\n\n\n\nOptimization Technique\n\n\nDual Quasi-Newton\n\n\n\n\nParameters in Optimization\n\n\n1\n\n\n\n\nLower Boundaries\n\n\n0\n\n\n\n\nUpper Boundaries\n\n\n0\n\n\n\n\nFixed Effects\n\n\nProfiled\n\n\n\n\nResidual Variance\n\n\nProfiled\n\n\n\n\nStarting From\n\n\nData\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nIteration History\n\n\n\n\nIteration\n\n\nRestarts\n\n\nEvaluations\n\n\nObjectiveFunction\n\n\nChange\n\n\nMaxGradient\n\n\n\n\n\n\n0\n\n\n0\n\n\n4\n\n\n122.27404476\n\n\n.\n\n\n1.11E-10\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\nConvergence criterion (ABSGCONV=0.00001) satisfied.\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nFit Statistics\n\n\n\n\n\n\n-2 Res Log Likelihood\n\n\n122.27\n\n\n\n\nAIC (smaller is better)\n\n\n126.27\n\n\n\n\nAICC (smaller is better)\n\n\n126.85\n\n\n\n\nBIC (smaller is better)\n\n\n125.49\n\n\n\n\nCAIC (smaller is better)\n\n\n127.49\n\n\n\n\nHQIC (smaller is better)\n\n\n124.18\n\n\n\n\nGeneralized Chi-Square\n\n\n241.01\n\n\n\n\nGener. Chi-Square / DF\n\n\n10.04\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nEstimated V Matrix for block 1\n\n\n\n\nRow\n\n\nCol1\n\n\nCol2\n\n\nCol3\n\n\nCol4\n\n\nCol5\n\n\nCol6\n\n\n\n\n\n\n1\n\n\n8.4792\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n\n\n2\n\n\n-1.5627\n\n\n8.4792\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n\n\n3\n\n\n-1.5627\n\n\n-1.5627\n\n\n8.4792\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n\n\n4\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n8.4792\n\n\n-1.5627\n\n\n-1.5627\n\n\n\n\n5\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n8.4792\n\n\n-1.5627\n\n\n\n\n6\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n-1.5627\n\n\n8.4792\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nEstimated V Correlation Matrix for block 1\n\n\n\n\nRow\n\n\nCol1\n\n\nCol2\n\n\nCol3\n\n\nCol4\n\n\nCol5\n\n\nCol6\n\n\n\n\n\n\n1\n\n\n1.0000\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n\n\n2\n\n\n-0.1843\n\n\n1.0000\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n\n\n3\n\n\n-0.1843\n\n\n-0.1843\n\n\n1.0000\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n\n\n4\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n1.0000\n\n\n-0.1843\n\n\n-0.1843\n\n\n\n\n5\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n1.0000\n\n\n-0.1843\n\n\n\n\n6\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n-0.1843\n\n\n1.0000\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCovariance Parameter Estimates\n\n\n\n\nCov Parm\n\n\nSubject\n\n\nEstimate\n\n\nStandardError\n\n\n\n\n\n\nCS\n\n\nblock\n\n\n-1.5627\n\n\n0.5350\n\n\n\n\nResidual\n\n\n\n\n10.0419\n\n\n3.1755\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nType III Tests of Fixed Effects\n\n\n\n\nEffect\n\n\nNum DF\n\n\nDen DF\n\n\nF Value\n\n\nPr &gt; F\n\n\n\n\n\n\ntrt\n\n\n5\n\n\n20\n\n\n1.18\n\n\n0.3542",
-    "crumbs": [
-      "NCCC-170",
-      "Example 1: Negative Variance",
-      "SAS solution"
-    ]
-  },
-  {
-    "objectID": "chapters/example-01-sas.html#alternative-approach-2",
-    "href": "chapters/example-01-sas.html#alternative-approach-2",
-    "title": "Example 1: RCBD & Negative Block Effects",
-    "section": "Alternative Approach 2",
-    "text": "Alternative Approach 2\nFit the model allowing the variance componens to become negative. SAS has an option for overriding the restriction on negative variance components.\nproc glimmix data=Example1Data nobound;\n   class block trt;\n   model y = trt;\n   random block;\nrun;\n\n\n\n\n\n\n\n\n\n\n\n\n\nModel Information\n\n\n\n\n\n\nData Set\n\n\nWORK.EXAMPLE1DATA\n\n\n\n\nResponse Variable\n\n\nY\n\n\n\n\nResponse Distribution\n\n\nGaussian\n\n\n\n\nLink Function\n\n\nIdentity\n\n\n\n\nVariance Function\n\n\nDefault\n\n\n\n\nVariance Matrix\n\n\nNot blocked\n\n\n\n\nEstimation Technique\n\n\nRestricted Maximum Likelihood\n\n\n\n\nDegrees of Freedom Method\n\n\nContainment\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\nClass Level Information\n\n\n\n\nClass\n\n\nLevels\n\n\nValues\n\n\n\n\n\n\nblock\n\n\n5\n\n\n1 2 3 4 5\n\n\n\n\ntrt\n\n\n6\n\n\n1 2 3 4 5 6\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nNumber of Observations Read\n\n\n30\n\n\n\n\nNumber of Observations Used\n\n\n30\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nDimensions\n\n\n\n\n\n\nG-side Cov. Parameters\n\n\n1\n\n\n\n\nR-side Cov. Parameters\n\n\n1\n\n\n\n\nColumns in X\n\n\n7\n\n\n\n\nColumns in Z\n\n\n5\n\n\n\n\nSubjects (Blocks in V)\n\n\n1\n\n\n\n\nMax Obs per Subject\n\n\n30\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\nOptimization Information\n\n\n\n\n\n\nOptimization Technique\n\n\nDual Quasi-Newton\n\n\n\n\nParameters in Optimization\n\n\n1\n\n\n\n\nLower Boundaries\n\n\n0\n\n\n\n\nUpper Boundaries\n\n\n0\n\n\n\n\nFixed Effects\n\n\nProfiled\n\n\n\n\nResidual Variance\n\n\nProfiled\n\n\n\n\nStarting From\n\n\nData\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nIteration History\n\n\n\n\nIteration\n\n\nRestarts\n\n\nEvaluations\n\n\nObjectiveFunction\n\n\nChange\n\n\nMaxGradient\n\n\n\n\n\n\n0\n\n\n0\n\n\n4\n\n\n122.27404476\n\n\n.\n\n\n1.26E-10\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\nConvergence criterion (ABSGCONV=0.00001) satisfied.\n\n\n\n\n\n\n\n \n\n\n\n\n\nEstimated G matrix is not positive definite.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nFit Statistics\n\n\n\n\n\n\n-2 Res Log Likelihood\n\n\n122.27\n\n\n\n\nAIC (smaller is better)\n\n\n126.27\n\n\n\n\nAICC (smaller is better)\n\n\n126.85\n\n\n\n\nBIC (smaller is better)\n\n\n125.49\n\n\n\n\nCAIC (smaller is better)\n\n\n127.49\n\n\n\n\nHQIC (smaller is better)\n\n\n124.18\n\n\n\n\nGeneralized Chi-Square\n\n\n241.01\n\n\n\n\nGener. Chi-Square / DF\n\n\n10.04\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCovariance Parameter Estimates\n\n\n\n\nCov Parm\n\n\nEstimate\n\n\nStandardError\n\n\n\n\n\n\nblock\n\n\n-1.5627\n\n\n0.5350\n\n\n\n\nResidual\n\n\n10.0419\n\n\n3.1755\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nType III Tests of Fixed Effects\n\n\n\n\nEffect\n\n\nNum DF\n\n\nDen DF\n\n\nF Value\n\n\nPr &gt; F\n\n\n\n\n\n\ntrt\n\n\n5\n\n\n20\n\n\n1.18\n\n\n0.3542",
-    "crumbs": [
-      "NCCC-170",
-      "Example 1: Negative Variance",
-      "SAS solution"
-    ]
-  },
-  {
-    "objectID": "index.html#references",
-    "href": "index.html#references",
-    "title": "About this Guide",
-    "section": "References",
-    "text": "References\n\n\nStroup, Walter W., Marina Ptukhina, and J Garai. 2024. Generalized Linear Mixed Models. 2nd ed. New York, NY: Chapman; Hall/CRC Press. https://doi.org/10.1201/9780429092060."
   }
 ]
