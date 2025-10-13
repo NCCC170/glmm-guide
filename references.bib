@@ -175,3 +175,143 @@ Regression Models},
 	year = {2018},
 }
 
+@Manual{ordinal_rpackage,
+	title = {ordinal---Regression Models for Ordinal Data},
+	author = {Rune H. B. Christensen},
+	year = {2023},
+	note = {R package version 2023.12-4.1},
+	url = {https://CRAN.R-project.org/package=ordinal},
+}
+
+@Manual{emmeans_rpackage,
+	title = {emmeans: Estimated Marginal Means, aka Least-Squares Means},
+	author = {Russell V. Lenth},
+	year = {2025},
+	note = {R package version 1.11.1},
+	url = {https://CRAN.R-project.org/package=emmeans},
+	doi = {10.32614/CRAN.package.emmeans},
+}
+
+@Article{Wood_2011,
+	title = {Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric generalized linear models},
+	journal = {Journal of the Royal Statistical Society (B)},
+	volume = {73},
+	number = {1},
+	pages = {3--36},
+	year = {2011},
+	author = {S. N. Wood},
+	doi = {10.1111/j.1467-9868.2010.00749.x},
+}
+
+@Book{Wood_2017,
+	title = {Generalized {A}dditive {M}odels: An Introduction with {R}},
+	year = {2017},
+	author = {S. N. Wood},
+	edition = {2},
+	publisher = {Chapman and Hall/CRC},
+}
+
+
+@article{burkner_2017,
+	title = {brms: {An} {R} {Package} for {Bayesian} {Multilevel} {Models} {Using} {Stan}},
+	volume = {80},
+	shorttitle = {brms},
+	url = {https://www.jstatsoft.org/article/view/v080i01},
+	doi = {10.18637/jss.v080.i01},
+	language = {en-US},
+	urldate = {2018-08-23},
+	journal = {Journal of Statistical Software},
+	author = {Bürkner, Paul C.},
+	year = {2017},
+	keywords = {Bayesian inference, MCMC, multilevel model, ordinal data, R, Stan},
+}
+
+@article{brant_1990,
+	title = {Assessing {Proportionality} in the {Proportional} {Odds} {Model} for {Ordinal} {Logistic} {Regression}},
+	volume = {46},
+	issn = {0006-341X},
+	url = {https://www.jstor.org/stable/2532457},
+	doi = {10.2307/2532457},
+	abstract = {The proportional odds model for ordinal logistic regression provides a useful extension of the binary logistic model to situations where the response variable takes on values in a set of ordered categories. The model may be represented by a series of logistic regressions for dependent binary variables, with common regression parameters reflecting the proportional odds assumption. Key to the valid application of the model is the assessment of the proportionality assumption. An approach is described arising from comparisons of the separate (correlated) fits to the binary logistic models underlying the overall model. Based on asymptotic distributional results, formal goodness-of-fit measures are constructed to supplement informal comparisons of the different fits. A number of proposals, including application of bootstrap simulation, are discussed and illustrated with a data example.},
+	number = {4},
+	urldate = {2025-06-17},
+	journal = {Biometrics},
+	author = {Brant, Rollin},
+	year = {1990},
+	note = {Publisher: [Wiley, International Biometric Society]},
+	pages = {1171--1178},
+}
+
+@misc{harrell_2022,
+	title = {Assessing the {Proportional} {Odds} {Assumption} and {Its} {Impact}},
+	url = {https://www.fharrell.com/post/impactpo/},
+	abstract = {This article demonstrates how the proportional odds (PO) assumption and its impact can be assessed. General robustness to non-PO on either a main variable of interest or on an adjustment covariate are exemplified. Advantages of a continuous Bayesian blend of PO and non-PO are also discussed.},
+	language = {en},
+	urldate = {2025-09-12},
+	journal = {Statistical Thinking},
+	author = {Harrell, Frank},
+	month = mar,
+	year = {2022},
+}
+
+@book{harrell_regression_2015,
+	address = {Cham},
+	series = {Springer {Series} in {Statistics}},
+	title = {Regression {Modeling} {Strategies}: {With} {Applications} to {Linear} {Models}, {Logistic} and {Ordinal} {Regression}, and {Survival} {Analysis}},
+	copyright = {https://www.springernature.com/gp/researchers/text-and-data-mining},
+	isbn = {978-3-319-19424-0 978-3-319-19425-7},
+	shorttitle = {Regression {Modeling} {Strategies}},
+	url = {https://link.springer.com/10.1007/978-3-319-19425-7},
+	language = {en},
+	urldate = {2025-09-12},
+	publisher = {Springer International Publishing},
+	author = {Harrell, Frank E.},
+	year = {2015},
+	doi = {10.1007/978-3-319-19425-7},
+}
+
+@article{brms_book,
+	title = {The brms {Book}: {Applied} {Bayesian} {Regression} {Modelling} {Using} {R} and {Stan} ({Early} {Draft})},
+	language = {en},
+	author = {Bürkner, Paul-Christian},
+}
+
+@misc{ordinal_UCLA,
+	title = {Ordinal {Logistic} {Regression} {\textbar} {R} {Data} {Analysis} {Examples}},
+	url = {https://stats.oarc.ucla.edu/r/dae/ordinal-logistic-regression/},
+	urldate = {2025-09-12},
+}
+
+@article{stroup_pseudo-likelihood_2020,
+	title = {Pseudo-{Likelihood} or {Quadrature}? {What} {We} {Thought} {We} {Knew}, {What} {We} {Think} {We} {Know}, and {What} {We} {Are} {Still} {Trying} to {Figure} {Out}},
+	volume = {25},
+	issn = {1537-2693},
+	shorttitle = {Pseudo-{Likelihood} or {Quadrature}?},
+	url = {https://doi.org/10.1007/s13253-020-00402-6},
+	doi = {10.1007/s13253-020-00402-6},
+	abstract = {Two predominant computing methods for generalized linear mixed models (GLMMs) are linearization, e.g., pseudo-likelihood (PL), and integral approximation, e.g., Gauss–Hermite quadrature. The primary GLMM package in R, LME4, only uses integral approximation. The primary GLMM procedure in SAS®, PROC GLIMMIX, was originally developed using linearization, but integral approximation methods were added in the 2008 release. This presents a dilemma for GLMM users: Which method should one use, and why? Linearization methods are more versatile and able to handle both conditional and marginal GLMMs. Linearization can be implemented with REML-like variance component estimation, whereas quadrature is strictly maximum likelihood. However, GLMM software documentation and the literature on which it is based tend to focus on linearization’s limitations. Stroup (Generalized linear mixed models: modern concepts, methods and applications, CRC Press, Boca Raton, 2013) reiterates this theme in his GLMM textbook. As a result, “conventional wisdom” has arisen that integral approximation—quadrature when possible—is always best. Meanwhile, ongoing experience with GLMMs and research about their small sample behavior suggest that “conventional wisdom” circa 2013 is often not true. Above all, it is clear there is no one-size-fits-all best method. The purpose of this paper is to provide an updated look at what we now know about quadrature and PL and to offer some general operating principles for making an informed choice between the two. A series of simulation studies investigating distributions and designs representative of research in agricultural and related disciplines provide an overview of each method with respect to estimation accuracy, type I error control, and robustness (or lack thereof) to model misspecification.},
+	language = {en},
+	number = {4},
+	urldate = {2025-09-12},
+	journal = {Journal of Agricultural, Biological and Environmental Statistics},
+	author = {Stroup, Walt and Claassen, Elizabeth},
+	month = dec,
+	year = {2020},
+	keywords = {Generalized linear mixed model, Integral approximation, Linearization, Model misspecification, Residual maximum likelihood, Type I error control},
+	pages = {639--656},
+}
+
+@Manual{stan_reference_manual,
+	title = {Stan {Reference} {Manual}, {Version} 2.37},
+	url = {https://mc-stan.org},
+	language = {en},
+	author = {Stan Development Team},
+	year = {2025},
+}
+
+@Manual{stan_users_guide,
+	title = {Stan {User}'s {Guide}, {Version} 2.37},
+	url = {https://mc-stan.org},
+	author = {Stan Development Team},
+	year = {2025},
+}
