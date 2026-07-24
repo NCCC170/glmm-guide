@@ -1,0 +1,3731 @@
+---
+title: "Examples 10 and 11: Mixed Models-Based Precision and Power Analyses for Design Comparisons Using `PROC GLIMMIX` and `glmmTMB` + `emmeans`"
+date: "`r Sys.Date()`"
+date-modified: last-modified
+format:
+  html:
+    embed-resources: true
+    highlight-style: atom-one
+  docx:
+    reference-doc: reference.docx
+toc: true
+toc-depth: 6
+bibliography: 
+  - references.bib
+nocite: | 
+  @*
+crossref: false
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+## Joint Effort by the NCCC170: "Research Advances in Agricultural Statistics": Informing Best Practices for GLMM Implementation
+
+## Contributors: Daniel G. Palmer, Nora M. Bello, Josefina Lacasa, Réka Howard, Walter W. Stroup
+
+::: callout-caution
+This resource was created by a joint effort of NCCC170 members and
+\[will be / is\] provided free of charge with absolutely no warranty.
+Please use and redistribute this resource with no restrictions.
+:::
+
+::: callout-note
+## GLMM Challenge
+
+Precision and power analysis are crucial aspects to consider when
+planning agricultural studies. Precision analysis is useful when the
+researcher wants to determine the amount of variability around an effect
+of interest. Power analysis is useful when the researcher wants to
+determine what sample size is needed to achieve confidence in the
+supposed effect of interest being a true effect. In addition, the
+determination of statistical power is essential for ensuring that the
+design is appropriately designed to detect statistical significance and
+minimizing the likelihood of Type II errors.
+
+The choice of experimental design for a study is critical and can be
+costly if done without the appropriate planning. Many researchers use
+balanced incomplete block and (forced) randomized complete block designs
+(RCBD). Others use control versus experimental and disconnected/nested
+factorial (split-plot) designs. RCBD have block sizes that are dictated
+by the researcher where each block contains all assigned treatments.
+Sometimes, the block size arises naturally. An example of this is that
+plots have a natural block size within a particular field (incomplete
+block design or generalized RCBD). In many cases, respecting the block
+size is paramount.
+
+Another factor to consider is that canned power calculators usually
+cannot appropriately account for the complexity of the experimental
+design under consideration. Often, statisticians commonly implement
+special simulation models (Monte Carlo or other) to compute precision
+and power for research studies [@stroup2018]. This is usually
+sufficient, but simulation does not offer a closed-form solution unlike
+many standard power calculators which limits its flexibility for
+case-specific simulations.
+
+The authors share approaches yielding identical results in SAS® [@sas]
+and R [@base; @brooks2017; @mcgillycuddy2025; @emmeans] for precision
+and power analysis with linear mixed models. In both platforms, the
+algorithm is flexible so any design involving fixed and random effects
+with normally-distributed responses can be considered.
+:::
+
+## The full document needs to be compiled by someone that has access to desktop SAS. I no longer have access. Just remove `*| eval: false;` from code chunks. -Daniel
+
+```{r}
+#| echo: false
+#| message: false
+#| include: false
+
+library(SASmarkdown)
+saspath <- "C:\\Program Files\\SASHome\\SASFoundation\\9.4\\sas.exe"
+sasopts <- "-nosplash -ls 75"
+knitr::opts_chunk$set(
+  engine.path = list(sas = saspath, saslog = saspath),
+  engine.opts = list(sas = sasopts, saslog = sasopts),
+  comment = NA
+)
+```
+
+```{=html}
+<!--
+This document will not be produced if the package version for
+[`reformulas`
+$\gt 0.4.0$](https://github.com/glmmTMB/glmmTMB/issues/1239). Make sure
+to update this package for use with `glmmTMB`.
+-->
+```
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+#| include: false
+
+# Libraries
+if(packageVersion("reformulas") > "0.4.0")  library(glmmTMB)  else stop("glmmTMB needs at least reformulas version '0.4.1'")
+library(emmeans)
+
+# library(kableExtra)
+library(gt)
+library(ggthemes)
+```
+
+Let us assume that there is a situation where the following resources
+are available: 10 blocks with natural block size of 3 units with six
+treatment combinations in a 2x3 AxB factorial arrangement.
+
+@tbl-1 shows the six AxB treatment combinations.
+
+```{r}
+#| echo: false
+#| label: tbl-1
+#| tbl-cap: "*Treatment Combinations for a 2x3 AxB Factorial Design*"
+
+table1 <- data.frame(
+  B1 = c(0, 3),
+  B2 = c(1, 4),
+  B3 = c(2, 5)
+)
+rownames(table1) <- c("A1", "A2")
+
+table1 <- gt(table1, rownames_to_stub = TRUE) %>%
+  # tab_header(
+  #   title = md("Table 1: *Treatment Combinations for a 2x3 AxB Factorial Design*")
+  # ) %>%
+  cols_label(
+    B1 = md("**B1**"), B2 = md("**B2**"), B3 = md("**B3**")
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_stub(rows = everything())
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  )
+
+if(knitr::is_html_output()){
+  table1
+}else{
+  table1 %>% as_raw_html()
+}
+```
+
+## Candidate Designs {#candidate-designs}
+
+The objective of this particular example is to select the experimental
+design that yields the lowest standard errors from the mixed models and
+proceed with the power analysis for that design. There are a set number
+of resources for the candidate designs.
+
+All datasets come from the book *Generalized Linear Mixed Models
+Concepts, Methods, and Applications, 1st Edition* [@stroup2016] and *2nd
+Edition* Chapter 21, Section 21.2 [@stroup2024a; @stroup2024b].
+
+1.  **Balanced Incomplete Block Design**\
+    The balanced incomplete block (BIB) design has a natural block size
+    of three for 10 blocks. This design has each ordered pair of
+    treatments appear in exactly two of the 10 blocks. For example, the
+    first block ($\{0, 1, 2\}$) can have three ordered pairs in the set
+    $\{(0, 1), (0, 2), (1, 2)\}$. The ordered pair $(0, 1)$ would appear
+    in exactly one other block.
+
+2.  **Control vs Experimental Treatments Design**\
+    The control vs experimental (CVT) design also has a natural block
+    size of three for 10 blocks. The control group is assigned to each
+    of the 10 blocks.
+
+3.  **Disconnected/Nested Factorial Design**\
+    The disconnected/nested factorial (DNF) design also has a natural
+    block size of three for 10 blocks. If the ordered pairs of the block
+    levels in the set are defined as
+    $\{(1, 2), (3, 4), (5, 6), (7, 8), (9, 10)\}$, then the first factor
+    level of a factor $A$ $(A1)$ would map to the first element in each
+    ordered pair and the second factor level $(A2)$ would map to the
+    second element in each ordered pair. Within each factor level of
+    $A$, there is a sub-plot that has the natural block size of three.
+    We assign the three levels of a factor $B$ $(B1, B2, B3)$ to the
+    three treatments in each block corresponding to the factor levels of
+    $A$. This design is commonly called a split-plot design.
+
+4.  **"Forced" Randomized Complete Block Design**\
+    The forced randomized complete block (RCB) design is a natural
+    extension of the disconnected/nested factorial design that has a
+    forced block size of 6 for 5 blocks. Each treatment appears in each
+    forced block (rep).
+
+@tbl-2 describes the layout of the candidate designs (BIB, CVT, DNF, and
+RCB), and the treatment assignments within the blocks.
+
+```{r}
+#| echo: false
+#| label: tbl-2
+#| tbl-cap: "*The layout of the Balanced Incomplete Block Design, the Control vs Experimental Treatments Design, the Nested Factorial Design, and the Randomized Complete Block Design*"
+
+table2 <- data.frame(
+  Block = 1:10,
+  col2 = rep(0:2, c(5, 3, 2)),
+  col3 = c(1, 1:4, 2:4, 3, 3),
+  col4 = c(2:5, 5, 5, 4, 5, 4, 5),
+  Block = 1:10,
+  col6 = rep(0, 10),
+  col7 = rep(1:4, 4:1),
+  col8 = c(2:5, 3:5, 4, 5, 5),
+  Block = 1:10,
+  col10 = rep(c(0, 3), 5),
+  col11 = rep(c(1, 4), 5),
+  col12 = rep(c(2, 5), 5),
+  Rep = c(1, "", 2, "", 3, "", 4, "", 5, ""),
+  col14 = rep(c(0, 3), 5),
+  col15 = rep(c(1, 4), 5),
+  col16 = rep(c(2, 5), 5)
+)
+
+table2 <- gt(table2) %>%
+  # tab_header(
+  #   title = md("Table 2: *The layout of the Balanced Incomplete Block Design, the Control vs Experimental Treatments Design, the Nested Factorial Design, and the Randomized Complete Block Design*")
+  # ) %>%
+  cols_label(
+    Block = md("**Block**"), col2 = "", col3 = "", col4 = "", Block.1 = md("**Block**"), col6 = "",
+    col7 = "", col8 = "", Block.2 = md("**Block**"), col10 = "", col11 = "", col12 = "",
+    Rep = md("**Rep**"), col14 = "", col15 = "", col16 = ""
+  ) %>%
+  tab_spanner(label = md("**Balanced Incomplete Block (BIB)**"), columns = 1:4) %>%
+  tab_spanner(label = md("**Control vs Experimental (CVT)**"), columns = 5:8) %>%
+  tab_spanner(label = md("**Nested Factorial (DNF)**"), columns = 9:12) %>%
+  tab_spanner(label = md("**Randomized Complete Block (RCB)**"), columns = 13:16) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_body(columns = c(Block, Block.1, Block.2, Rep))
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_stub(rows = everything())
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  )
+
+if(knitr::is_html_output()){
+  table2
+}else{
+  table2 %>% as_raw_html()
+}
+```
+
+## Data Generation Process and Model Specification
+
+Following @stroup2016 and Stroup et al. [-@stroup2024a; -@stroup2024b], the ANOVA
+shells for each design are implemented. Each ANOVA shell has four parts
+described below:
+
+1.  **Design Structure**
+
+    The design structure is the same for the BIB, CVT, and DNF designs
+    since the number of blocks and block sizes are the same for the
+    three designs. The RCB is using the forced complete blocks, so the
+    degrees of freedom are partitioned differently.
+
+2.  **Treatment Structure**
+
+    The treatment structure is the same for all candidate designs since
+    the number of factor levels for the treatments are the same.
+
+3.  **Combined Structure**
+
+    The combined structure is the same for the BIB and CVT designs due
+    to the "true" factorial structure of these designs. Since the DNF is
+    disconnected, the $Block$ factor is nested within factor $A$. So, we
+    lose a degree of freedom there that goes to the error. The RCB is
+    also a "true" factorial, but differs due to the forced blocks.
+
+4.  **Model Effect and Distribution**
+
+    For all designs, $Block$ (and $Rep$) is a random effect and all
+    other are fixed effects. Due to the disconnected nature of the DNF
+    design, $Block$ cannot be treated as fixed.
+
+The ANOVA shells including the design structure, treatment structure,
+combined structure, and the model effect and distributional assumptions
+are displayed in @tbl-3 for the BIB design and CVT design, in @tbl-4 for
+the DNF, and in @tbl-5 for the RCB.
+
+### BIB and CVT
+
+```{r}
+#| echo: false
+#| label: tbl-3
+#| tbl-cap: "*ANOVA shell for BIB and CVT*"
+
+table3 <- data.frame(
+  col1 = c("Block", rep("", 3), "Obs(Block)", "Total"),
+  col2 = c("$r-1$", rep("", 3), "$(n_r-1)r$", "$N-1=n_rr-1$"),
+  col3 = c("", "Factor A", "Factor B", "A*B", rep("", 2)),
+  col4 = c("", "$a-1$", "$b-1$", "$(a-1)(b-1)$", rep("", 2)),
+  col5 = c("Block", "Factor A", "Factor B", "A*B", "Block\\*A\\*B", ""),
+  col6 = c("$r-1$", "$a-1$", "$b-1$", "$(a-1)(b-1)$", "$(n_r-1)r-ab+1$", "$N-1=n_rr-1$"),
+  col7 = c("$r_k{~}iid{~}N(0, \\sigma_r^2)$", "$\\alpha_i$", "$\\beta_j$", "$(\\alpha\\beta)_{ij}$", "$e_{ijk}{~}iid{~}N(0, \\sigma_e^2)$", "")
+)
+
+table3 <- table3 %>%
+  gt() %>%
+  # tab_header(
+  #   title = md("Table 3: *ANOVA shell for BIB and CVT*")
+  # ) %>%
+  cols_label(
+    col1 = "Source", col2 = "df", col3 = "Source",
+    col4 = "df", col5 = "Source", col6 = "df", col7 = ""
+  ) %>%
+  tab_spanner(label = md("**Design structure**"), columns = 1:2) %>%
+  tab_spanner(label = md("**Trt structure**"), columns = 3:4) %>%
+  tab_spanner(label = md("**Combined**"), columns = 5:6) %>%
+  tab_spanner(label = md("**Model effect + distribution**"), columns = 7) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_stub(rows = everything())
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  )
+
+if(knitr::is_html_output()){
+  table3 %>% fmt_markdown(columns = everything())
+}else{
+  table3 %>% as_raw_html()
+}
+```
+
+::: {style="font-size: 75%;"}
+- $r =$ number of blocks, $n_r =$ natural block size, $a =$ number of
+  levels for factor A, $b =$ number of levels for factor B, $N =$ total
+  number of observations
+:::
+
+### DNF
+
+```{r}
+#| echo: false
+#| label: tbl-4
+#| tbl-cap: "*ANOVA shell for DNF*"
+
+table4 <- data.frame(
+  col1 = c("", "Block", rep("", 2), "Obs(Block)", "Total"),
+  col2 = c("", "$r-1$", rep("", 2), "$(n_r-1)r$", "$N-1=n_rr-1$"),
+  col3 = c("Factor A", "", "Factor B", "A*B", rep("", 2)),
+  col4 = c("$a-1$", "", "$b-1$", "$(a-1)(b-1)$", rep("", 2)),
+  col5 = c("Factor A", "Block(A)", "Factor B", "A*B", "Block(A)*B", ""),
+  col6 = c("$a-1$", "$r-a$", "$b-1$", "$(a-1)(b-1)$", "$(n_r-1)r+a-ab$", "$N-1=n_rr-1$"),
+  col7 = c("$\\alpha_i$", "$r_{k(i)}{~}iid{~}N(0, \\sigma_r^2)$", "$\\beta_j$", "$(\\alpha\\beta)_{ij}$", "$e_{ijk}{~}iid{~}N(0, \\sigma_e^2)$", "")
+)
+
+table4 <- table4 %>%
+  gt() %>%
+  # tab_header(
+  #   title = md("Table 4: *ANOVA shell for DNF*")
+  # ) %>%
+  cols_label(
+    col1 = "Source", col2 = "df", col3 = "Source",
+    col4 = "df", col5 = "Source", col6 = "df", col7 = ""
+  ) %>%
+  tab_spanner(label = md("**Design structure**"), columns = 1:2) %>%
+  tab_spanner(label = md("**Trt structure**"), columns = 3:4) %>%
+  tab_spanner(label = md("**Combined**"), columns = 5:6) %>%
+  tab_spanner(label = md("**Model effect + distribution**"), columns = 7) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_stub(rows = everything())
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  )
+
+if(knitr::is_html_output()){
+  table4 %>% fmt_markdown(columns = everything())
+}else{
+  table4 %>% as_raw_html()
+}
+```
+
+::: {style="font-size: 75%;"}
+- $r =$ number of blocks, $n_r =$ natural block size, $a =$ number of
+  levels for factor A, $b =$ number of levels for factor B, $N =$ total
+  number of observations
+:::
+
+### "Forced" RCB
+
+```{r}
+#| echo: false
+#| label: tbl-5
+#| tbl-cap: "*ANOVA shell for RCB*"
+
+table5 <- data.frame(
+  col1 = c("Forced Block", rep("", 3), "Obs(Forced Block)", "Total"),
+  col2 = c("$\\left\\lceil\\frac{r}{2}\\right\\rceil-1$", rep("", 3), "$(2n_r-1)\\left\\lceil\\frac{r}{2}\\right\\rceil$", "$N-1=n_rr-1$"),
+  col3 = c("", "Factor A", "Factor B", "A*B", rep("", 2)),
+  col4 = c("", "$a-1$", "$b-1$", "$(a-1)(b-1)$", rep("", 2)),
+  col5 = c("Forced Block", "Factor A", "Factor B", "A*B", "Block(A)*B", ""),
+  col6 = c("$\\left\\lceil\\frac{r}{2}\\right\\rceil-1$", "$a-1$", "$b-1$", "$(a-1)(b-1)$", "$(2n_r-1)\\left\\lceil\\frac{r}{2}\\right\\rceil-ab+1$", "$N-1=n_rr-1$"),
+  col7 = c("$f_{k}{~}iid{~}N(0, \\sigma_f^2)$", "$\\alpha_i$", "$\\beta_j$", "$(\\alpha\\beta)_{ij}$", "$e_{ijk}{~}iid{~}N(0, \\sigma_e^2)$", "")
+)
+
+table5 <- table5 %>%
+  gt() %>%
+  # tab_header(title = md("Table 5: *ANOVA shell for RCB*")) %>%
+  cols_label(
+    col1 = "Source", col2 = "df", col3 = "Source",
+    col4 = "df", col5 = "Source", col6 = "df", col7 = ""
+  ) %>%
+  tab_spanner(label = md("**Design structure**"), columns = 1:2) %>%
+  tab_spanner(label = md("**Trt structure**"), columns = 3:4) %>%
+  tab_spanner(label = md("**Combined**"), columns = 5:6) %>%
+  tab_spanner(label = md("**Model effect + distribution**"), columns = 7) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_stub(rows = everything())
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  )
+
+if(knitr::is_html_output()){
+  table5 %>% fmt_markdown(columns = everything())
+}else{
+  table5 %>% as_raw_html()
+}
+```
+
+::: {style="font-size: 75%;"}
+- $r =$ number of blocks, $n_r =$ natural block size, $a =$ number of
+  levels for factor A, $b =$ number of levels for factor B, $N =$ total
+  number of observations
+:::
+
+## Four-Step Process for Precision Analysis and Power Analysis {#programs-following-four-step-process}
+
+In this section, a four-step approach is presented for precision
+analysis (Example 10) and power analysis (Example 11). If a statistician
+is only interested in performing the precision analysis, the first three
+steps may be followed in order. The conclusion of this process helps
+decide which design to proceed with that will yield the lowest standard
+errors for the contrasts of interest. However, if a statistician is
+interested in performing the power analysis, the four-step approach need
+not be followed in order. Some possible scenarios are:
+
+1.  Steps 1-4 may be followed in order from start to finish. The
+    precision analysis may be used to select the design with the lowest
+    standard errors for the effect(s) of interest, and this design alone
+    would be used when computing the power. The sample size would be
+    adjusted for the selected design in step 4 until some threshold of
+    80% or 90% power is met (assuming resources aren't limited).
+
+2.  Steps 1-2 would be followed in order, but the precision analysis in
+    step 3 would be skipped entirely. The power analysis would be
+    performed in step 4 and the design of choice would be selected after
+    adjusting the sample size until some threshold of 80% or 90% power
+    is met (assuming resources aren't limited).
+
+For this hypothetical example, we will follow the first approach listed.
+Here is a breakdown of the four steps:
+
+- Step 1 - First, create an exemplary dataset with the structure of the
+  design being evaluated.
+
+  Depending on the design, the exemplary dataset contains the expected
+  values for treatment groups at each time. One can include a case in
+  the dataset for each individual replicate or a frequency variable to
+  represent the multiple replicates.
+
+  For precision analysis, expected values can be set to any value since
+  we are not interested in the point estimates. For example, $\mu_i=42$
+  for $i = 0, 1, 2, \dots, 5$.
+
+  For power analysis, the expected values need to be specified according
+  to the details of the experiment. In our example, we have
+  $\mu_0=\mu_3=\mu_4=\mu_5=20$, $\mu_1=18.75$, and $\mu_2=17.5$.
+
+  Notice there is no variability introduced in the expected values.
+
+  Factor $A$ is defined as $$\begin{equation}
+  A = 
+    \begin{cases}
+  1 & \text{if } Trt \in \{1,2\} \\
+  2 & \text{if } Trt \in \{3,4,5\}
+    \end{cases}
+  \end{equation}$$
+
+  Factor $B$ is defined as $$\begin{equation}
+  B = 
+    \begin{cases}
+  1 & \text{if } Trt = 3 \\
+  2 & \text{if } Trt \in \{1,4\} \\
+  3 & \text{if } Trt \in \{2,5\}
+    \end{cases}
+  \end{equation}$$
+
+  @littell80 and @lohr84 introduced the exemplary dataset approach for
+  linear models in `PROC GLM`. @stroup1999 introduced the exemplary
+  dataset approach for linear mixed models in `PROC MIXED`. @stroup2016
+  and Stroup et al. [-@stroup2024a; -@stroup2024b] introduced the exemplary dataset
+  approach for generalized linear mixed models in `PROC GLIMMIX`.
+
+- Step 2 - `PROC GLIMMIX` [@sas] in `SAS®` or `glmmTMB` [@brooks2017;
+  @mcgillycuddy2025] in `R` step to "fit" model with fixed (co)variance
+  components
+
+  - In `SAS®`, use the `PARMS` statement with the `HOLD` and `NOPROFILE`
+    options. The parameterization of (co)variance components is on the
+    original scale.
+
+  - In `R`, use the `start` and `map` arguments in `glmmTMB`. The
+    parameterization of (co)variance components is version-dependent.
+    See [here](#covariance-component-parameterization).
+
+  - We know that $\sigma_r^2 = 0.5$ and $\sigma_e^2 = 1$ from the BIB,
+    CVT, and DNF designs. For the forced RCB, @stroup2016 and
+    Stroup et al. [-@stroup2024a; -@stroup2024b] say that the variance component for
+    the forced block ($\sigma_f^2$) can be calculated with expected mean
+    squares as follows:
+
+$$\begin{aligned}
+  \sigma_f^2 &= \frac{1}{ab}[EMS(Block) - EMS(Error)]\\
+  \sigma_f^2 &= \frac{1}{ab}[trace(\{[\mathbf{H - H_T}] / rank(\mathbf{X_{Blk}})\}\mathbf{V}) - trace(\{[\mathbf{I - H}] / [N - rank(\mathbf{X})]\}\mathbf{V})]
+\end{aligned}$$ {#eq-ems}
+
+where $\mathbf{I}$ is the identity matrix; and
+$\mathbf{V_{Blk} = ZGZ' + R}$, $\mathbf{Z}$ denotes the design matrix
+corresponding to the random effects, $\mathbf{G}$ denotes the random
+effects matrix, and $\mathbf{R}$ denotes the residual (error) effects
+matrix; where the hat (or projection) matrices representing the
+leverages are $\mathbf{H = X(X'X)^-X'}$ and
+$\mathbf{H_T = X_T(X_T'X_T)^-X_T'}$
+
+where $\mathbf{X}$ and $\mathbf{X_T}$ represent the design matrices
+corresponding to the fixed effects of the full model and treatment,
+respectively. The full block-diagonal marginal variance-covariance
+matrix is denoted as $\mathbf{V = I_r \otimes V_{Blk}}$
+
+- Step 3 - `PROC GLIMMIX` or `emmeans` [@emmeans] in `R` step for
+  obtaining standard errors of contrasts of interest
+
+  - In `SAS®`, use the `ESTIMATE` or `LSMESTIMATE` statements for
+    single-row contrasts and the `CONTRAST` statement for multiple-row contrasts.
+
+  - In `R`, use `emmeans()` and `contrast()` for contrasts and
+    `joint_tests()` for Type III Tests contrasts.
+
+  - Single-row contrasts sometimes take the form
+    $$t^* = \mathbf{\frac{k'\boldsymbol{\hat{\beta}}}{\sqrt{k'(X'V^{-1}X)^-k}}}$$ {#eq-t}
+
+    where $\mathbf{k}$ represents a vector of contrast coefficients
+    corresponding to the coefficients of the fixed effects
+    ($\boldsymbol{\hat{\beta}}$).
+
+  - Multiple-row contrasts can sometimes take the quadratic form
+    $$F^* = \frac{\mathbf{(K'\boldsymbol{\hat{\beta}})'[K'(X'V^{-1}X)^-K]^-(K'\boldsymbol{\hat{\beta}})}}{rank(\mathbf{K})}$$ {#eq-F}
+
+    where $\mathbf{K}$ represents a matrix of contrast coefficients
+    corresponding to the coefficients of the fixed effects
+    ($\boldsymbol{\hat{\beta}}$).
+
+  - Containment degrees of freedom for this particular example can be
+    calculated as $$DenDF = N - rank(\mathbf{[X{~}Z]})$$ {#eq-dendf}
+
+    The `SAS®` documentation defines the calculation in detail
+    [here](https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.4/statug/statug_glimmix_details38.htm).
+
+    A limitation of `glmmTMB` is that the [residual degrees of
+    freedom](https://stats.stackexchange.com/questions/490386/how-does-emmeans-calculate-degrees-of-freedom-for-glmmtmb)
+    is the default method for inference. This can lead to inflated test
+    statistics and Type I errors. We can calculate them for this simple
+    example with the matrix algebra above. Note that `R`'s version of
+    residual degrees of freedom does not incorporate the random effects
+    design matrix $(\mathbf{Z})$.
+
+    It follows that the test statistics $t^* \sim t(DenDF)$ and
+    $F^* \sim F(rank(\mathbf{K}), DenDF)$.
+
+  This is where the statistician only interested in performing the
+  precision analysis would stop.
+
+- Step 4 - Calculate the non-centrality parameter and use probability
+  functions to calculate power
+
+  - The non-centrality parameter is calculated as
+    $$\phi = \mathbf{(K'\boldsymbol{\hat{\beta}})'[K'(X'V^{-1}X)^-K]^-(K'\boldsymbol{\hat{\beta}})} = rank(\mathbf{K})(F^*)$$ {#eq-nc}
+
+    This follows from some algebra of the $F^*$-statistic above. If we
+    have a contrast matrix that is a single row ($\mathbf{K = k}$), then
+    $rank(\mathbf{K}) = 1$, and $F^* = (t^*)^2$, so in this case,
+    $$\phi = rank(\mathbf{K})(F^*) = rank(\mathbf{K})(t^*)^2$$ {#eq-nc2}
+
+  - The power of the test is calculated as
+    $$Power = P(X \geq F_{1-\alpha}\mid rank(\mathbf{K}), DenDF, \phi)$$ {#eq-power}
+
+    Canned programs for power generally fail for mixed models because
+    they do not take recovery of inter-block information for incomplete
+    block designs and impact of changing block size on variance
+    structure into account).
+
+## Precision Analysis
+
+### Design 1 -- Balanced Incomplete Block
+
+@tbl-6 shows an ANOVA shell for the example with 10 blocks with 3
+treatments per block and a 2x3 treatment structure:
+
+```{r}
+#| echo: false
+#| label: tbl-6
+#| tbl-cap: "*Completed ANOVA shell for BIB*"
+
+table6 <- data.frame(
+  col1 = c("Block", rep("", 3), "Obs(Block)", "Total"),
+  col2 = c("$10-1=9$", rep("", 3), "$(3-1)10=20$", "$30-1=29$"),
+  col3 = c("", "Factor A", "Factor B", "A*B", rep("", 2)),
+  col4 = c("", "$2-1=1$", "$3-1=2$", "$(2-1)(3-1)=2$", rep("", 2)),
+  col5 = c("Block", "Factor A", "Factor B", "A*B", "Block\\*A\\*B", ""),
+  col6 = c("$10-1=9$", "$2-1=1$", "$3-1=2$", "$(2-1)(3-1)=2$", "$(3-1)10-2(3)+1=15$", "$30-1=29$"),
+  col7 = c("$r_k{~}iid{~}N(0, 0.5)$", "$\\alpha_i$", "$\\beta_j$", "$(\\alpha\\beta)_{ij}$", "$e_{ijk}{~}iid{~}N(0, 1)$", "")
+)
+
+table6 <- table6 %>%
+  gt() %>%
+  # tab_header(title = md("Table 6: *Completed ANOVA shell for BIB*")) %>%
+  cols_label(
+    col1 = "Source", col2 = "df", col3 = "Source",
+    col4 = "df", col5 = "Source", col6 = "df", col7 = ""
+  ) %>%
+  tab_spanner(label = md("**Design structure**"), columns = 1:2) %>%
+  tab_spanner(label = md("**Trt structure**"), columns = 3:4) %>%
+  tab_spanner(label = md("**Combined**"), columns = 5:6) %>%
+  tab_spanner(label = md("**Model effect + distribution**"), columns = 7) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_stub(rows = everything())
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  )
+  
+if(knitr::is_html_output()){
+  table6 %>% fmt_markdown(columns = everything())
+}else{
+  table6 %>% as_raw_html()
+}
+```
+
+It follows that the linear predictor for the BIB is
+
+$$\begin{equation}
+  \eta_{ijk} = \mu + r_k + \alpha_i + \beta_j + (\alpha\beta)_{ij} \quad\text{for } i=1,2; \ j=1,2,3; \ k=1,2,3,\dots,10
+\end{equation}$$ {#eq-bib}
+
+where
+
+- $\mu$ represents the overall population mean
+
+- $r_k$ represents the random effect corresponding to the $k^{th}$ level
+  of the $Block$
+
+- $\alpha_i$ represents the fixed effect corresponding to the $i^{th}$
+  level of Factor $A$
+
+- $\beta_j$ represents the fixed effect corresponding to the $j^{th}$
+  level of Factor $B$
+
+- $(\alpha\beta)_{ij}$ represents the fixed effect corresponding to the
+  interaction of Factor $A$ and $B$
+
+The factor effects model is
+
+$$\begin{equation}
+  y_{ijk} = \eta_{ijk} + e_{ijk}
+\end{equation}$$ {#eq-bib2}
+
+where
+
+- $e_{ijk}$ represents the random error corresponding to the $y_{ijk}$
+  observation
+
+#### Step 1
+
+##### `SAS®`
+
+A `DO` loop and a `DATALINES` statement used within a `DATA` step will
+create the exemplary dataset needed for the BIB example below. The data
+structure shown in the `DATALINES` statement clearly illustrates the
+treatment allocation in the BIB design as shown in @tbl-2.
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+data bib;
+    input block @@;
+    do plot=1 to 3;
+        input trt @@;
+        a=(trt>2)+1;
+        b=(trt=1)+(trt=4)+2*((trt=2)+(trt=5))+1;
+        mu=20 + (trt=1)*(-1.25) + (trt=2)*(-2.5);
+        output;
+    end;
+datalines;
+1  0 1 2
+2  0 1 3
+3  0 2 4
+4  0 3 5
+5  0 4 5
+6  1 2 5
+7  1 3 4
+8  1 4 5
+9  2 3 4
+10 2 3 5
+;
+```
+
+##### `R`
+
+The `R` syntax is similar to `SAS®` here aside from the use of
+vectorization in initializing the treatment allocation, block, and plot
+variables.
+
+::: {#lst-bibData}
+```{r}
+trt <- c(0:2, 0:1, 3, 0, 2, 4, 0, 3, 5, 0, 4:5, 1:2, 5, 1, 3:4, 1, 4:5,
+         2:4, 2:3, 5)
+bib <- data.frame(obs = 1:30,
+                  block = factor(rep(1:10, each = 3)),
+                  plot = factor(rep(1:3, 10)),
+                  trt = factor(trt),
+                  a = factor(as.numeric(trt > 2) + 1),
+                  b = factor((trt == 1) + (trt == 4) + 2 * ((trt == 2) + (trt == 5)) + 1),
+                  mu = 20 + (trt == 1) * (-1.25) + (trt == 2) * (-2.5))
+```
+
+BIB Data in R
+:::
+
+#### Step 2
+
+##### `SAS®`
+
+`PROC GLIMMIX` is used as if one was analyzing a real dataset with a few
+changes:
+
+- The `NOPROFILE` option is added to avoid including the residual
+  variance in the "optimization" and fix the variance to its specified
+  value.
+
+- The `PARMS` statement starts the block variance ($\sigma_r^2 = 0.5$)
+  and residual variance ($\sigma_e^2 = 1$) at the specified values.
+
+- The `HOLD` option is added to the `PARMS` statement to fix the block
+  variance ($\sigma_r^2 = 0.5$) and residual variance ($\sigma_e^2 = 1$)
+  at the specified values instead of using the variance component
+  estimates based on the exemplary dataset created in step 1. Sometimes,
+  `PROC GLIMMIX` will say that the
+  `Values in the PARMS statement are not feasible.` In this case, one
+  can change the variance components slightly until the error message
+  goes away. The block variance was modified to be
+  $\sigma_r^2 = 0.5001$. Of course, one could switch to `PROC MIXED` for
+  linear mixed models. In `PROC GLIMMIX`, the block, treatments A and B
+  are specified to be classification variables. Treatment A, B, and the
+  interaction of A and B are included as fixed effects in the model and
+  the block effect is a random effect with the specified block variance
+  and residual variance.
+
+::: {#lst-SASBIBmod}
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+proc glimmix data=bib noprofile;
+	class block a b;
+	model mu=a|b;
+	random intercept /subject=block;
+	parms (0.5001)(1) / hold=1,2;
+run;
+```
+
+BIB mixed model in SAS®
+:::
+
+##### `R`
+
+`glmmTMB` is used as if we were analyzing a real dataset with a few
+changes:
+
+- The `start` argument is added to start the block variance
+  ($\sigma_r^2 = 0.5$) and residual variance ($\sigma_e^2 = 1$) at the
+  values specified in `theta` and `betad(isp)`, respectively.
+
+- The `map` argument is added to fix the block variance
+  ($\sigma_r^2 = 0.5$) and residual variance ($\sigma_e^2 = 1$) at the
+  specified values in `theta` and `betad(isp)`, respectively, with `NA`.
+  The default value for the residual variance will be fixed to 1 if
+  `betad(isp)` is not specified within `start`. With this capability,
+  `glmmTMB` may be one of the only `R` packages that allow the user to
+  perform an appropriate [meta-analysis with a random-effects
+  model](https://www.metafor-project.org/doku.php/tips:rma_vs_lm_lme_lmer).
+  The `map` argument has the additional flexibility of allowing one to
+  constrain (co)variance components to be the same (e.g. set multiple
+  `theta` elements equal) in the optimization. This was employed
+  initially in the early stages of Example 1 with the heterogeneous
+  compound symmetry covariance structure when homogeneous compound
+  symmetry was not yet available.
+
+  See [here](https://github.com/glmmTMB/glmmTMB/issues/833) for more
+  details.
+
+- The `profile = TRUE` argument can be optionally added to
+  `glmmTMBControl()` to profile the fixed effects. This is equivalent to
+  what `SAS®` does by default for `METHOD = LAPLACE` to reduce the
+  number of dimensions in the optimization problem. It is not needed for
+  Gaussian responses.
+
+- A list of `SAS®` contrasts (`contr.SAS`) can be optionally added to
+  the `contrasts` argument for the fixed effects to have the last level
+  of the factors be the reference levels. `R` sets the first level of
+  factors to be the reference level by default.
+
+###### (Co)variance Component Parameterization {#covariance-component-parameterization}
+
+::: {.callout-note collapse="false"}
+###### Dispersion Parameter
+
+It's important to note that the dispersion parameter can be on the
+log-standard deviation or log-variance scale for `glmmTMB` depending on
+the version used. See
+[here](https://cran.r-project.org/web/packages/glmmTMB/news.html) for
+more details. An exception to this rule is that the scale parameter for
+a negative binomial GLM(M) always uses the "log-variance" scale.
+:::
+
+Here's how you can check which version of `glmmTMB` you are using:
+
+```{r}
+packageVersion("glmmTMB")
+```
+
+Below in @tbl-7, we've outlined the changes made to the arguments for
+different versions. See @eq-resVar and @eq-resVar2 for the algebra.
+
+```{r}
+#| echo: false
+#| label: tbl-7
+#| tbl-cap: "*Residual Variance Version Differences for glmmTMB*"
+
+versions <- data.frame(
+  col1 = c("$\\lt$ 1.1.9", "1.1.9", "$\\geq$ 1.1.10"),
+  col2 = c(rep("betad", 2), "betadisp"),
+  col3 = c("$\\beta_d = log(\\sigma_e^2)$", "$\\beta_d = log(\\sqrt{\\sigma_e^2})$", "$\\beta_{disp} = log(\\sqrt{\\sigma_e^2})$"),
+  col4 = c("up2date(oldmodel, update_gauss_disp = TRUE)", "up2date(oldmodel)", "")
+)
+
+versions <- versions %>%
+  gt() %>%
+  # tab_header(
+  #   title = md("Table 7: *Residual Variance Version Differences for glmmTMB*")
+  # ) %>%
+  cols_label(
+    col1 = md("**Version**"),
+    col2 = md("**Argument**"),
+    col3 = md("**Residual Variance**"),
+    col4 = md("**Code to Update Saved Model\\***")
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  )
+
+if(knitr::is_html_output()){
+  versions %>% fmt_markdown(columns = everything())
+}else{
+  versions %>% as_raw_html()
+}
+```
+
+::: {style="font-size: 75%;"}
+\*This functionality has not been tested by the authors of this
+document!
+:::
+
+```{=html}
+<!--
+We've created a function that automatically checks which version of
+`glmmTMB` is installed and makes sure the residual variance is correctly
+specified. **Is this function even needed or helpful if we have the
+above table? I wanted to make this R Markdown file code work dynamically
+for different versions of `glmmTMB`.**
+-->
+```
+
+```{r}
+#| echo: false
+
+updateResidualVariance <- function(model, sigma2E = 1){
+  if(packageVersion("glmmTMB") < "1.1.9"){
+    model <- update(model, 
+                    start = list(betad = log(sigma2E), 
+                                 theta = getME(model, "theta")))
+    model$call$start$betad <- str2lang(paste0(paste0(gsub("sigma2E", sigma2E, model$call$start$betad), collapse = "("), ")"))
+  }else if(packageVersion("glmmTMB") == "1.1.9"){
+    model <- update(model, 
+                    start = list(betad = log(sqrt(sigma2E)), 
+                                 theta = getME(model, "theta")))
+    model$call$start$betad <- str2lang(paste0(paste0(gsub("sigma2E", sigma2E, model$call$start$betad), collapse = "("), ")"))
+  }else{
+    model <- update(model, 
+                    start = list(betadisp = log(sqrt(sigma2E)), 
+                                 theta = getME(model, "theta")))
+    model$call$start$betadisp <- str2lang(paste0(paste0(gsub("sigma2E", sigma2E, model$call$start$betadisp), collapse = "("), ")"))
+  }
+  model$call$start$theta <- getME(model, "theta")
+  return(model)
+}
+```
+
+We "fit" the model and fix the residual variance according to the
+guideline outlined in the above table for the current version. You'll
+notice for the BIB, CVT, and DNF designs that the version differences in
+parameterization of the residual variance don't matter. However, this
+becomes important when we get to the [RCB design](#r-11).
+
+::: {#lst-RBIBmod}
+```{r}
+if(packageVersion("glmmTMB") < "1.1.9"){
+  bibMod <- glmmTMB(mu ~ a * b + (1 | block), data = bib,
+                  start = list(betad = log(1), 
+                               theta = log(sqrt(0.5))),
+                  map = list(betad = factor(NA), 
+                             theta = factor(NA)),
+                  REML = TRUE,
+                  contrasts = list(a = "contr.SAS", b = "contr.SAS"))
+}else if(packageVersion("glmmTMB") == "1.1.9"){
+  bibMod <- glmmTMB(mu ~ a * b + (1 | block), data = bib,
+                  start = list(betad = log(sqrt(1)), 
+                               theta = log(sqrt(0.5))),
+                  map = list(betad = factor(NA), 
+                             theta = factor(NA)),
+                  REML = TRUE,
+                  contrasts = list(a = "contr.SAS", b = "contr.SAS"))
+}else{
+  bibMod <- glmmTMB(mu ~ a * b + (1 | block), data = bib,
+                  start = list(betadisp = log(sqrt(1)), 
+                               theta = log(sqrt(0.5))),
+                  map = list(betadisp = factor(NA), 
+                             theta = factor(NA)),
+                  REML = TRUE,
+                  contrasts = list(a = "contr.SAS", b = "contr.SAS"))
+}
+```
+
+BIB mixed model in R
+:::
+
+For `glmmTMB` $<$ 1.1.9, we obtain the residual variance as
+
+$$\begin{aligned}
+  log(\sigma_e^2) &= \beta_d\\
+  \sigma_e^2 &= e^{\beta_d}
+\end{aligned}$$ {#eq-resVar}
+
+For `glmmTMB` $\geq$ 1.1.9, we obtain the residual variance as
+
+$$\begin{aligned}
+  log(\sqrt{\sigma_e^2}) &= \beta_{d(isp)}\\
+  \sqrt{\sigma_e^2} &= e^{\beta_{d(isp)}}\\
+  \sigma_e^2 &= e^{2\beta_{d(isp)}}
+\end{aligned}$$ {#eq-resVar2}
+
+```{r}
+if(packageVersion("glmmTMB") < "1.1.9"){
+    print(c("logVariance" = getME(bibMod, "beta")["betad"], 
+            "variance" = exp(getME(bibMod, "beta")["betad"])))
+}else{
+    print(c("logSD" = getME(bibMod, "beta")[startsWith(names(getME(bibMod, "beta")), "betad")], 
+            "variance" = exp(2 * getME(bibMod, "beta")[startsWith(names(getME(bibMod, "beta")), "betad")])))
+}
+```
+
+For all versions of `glmmTMB`, we obtain the block variance as
+
+$$\begin{aligned}
+  log(\sqrt{\sigma_r^2}) &= \theta\\
+  \sqrt{\sigma_r^2} &= e^{\theta}\\
+  \sigma_r^2 &= e^{2\theta}
+\end{aligned}$$ {#eq-thetaVar}
+
+```{r}
+c("logSD" = getME(bibMod, "theta"), 
+  "variance" = exp(2 * getME(bibMod, "theta")))
+```
+
+It is helpful to use the `summary()` function to make sure everything is
+specified correctly.
+
+```{r}
+summary(bibMod)
+```
+
+You should see the block variance specified to be 0.5, and the residual
+variance specified to be 1. Our equation for the fixed effects is
+$$\begin{equation}
+  \mu_i = 20 + (-2.5)x_{i1} + 0x_{i2} + 0x_{i3} + 2.5x_{i1}x_{i2} + 1.25x_{i1}x_{i3}
+\end{equation} $$ {#eq-fixef}
+
+which is consistent with we what specified for the exemplary dataset. We
+also note that the output confirms that we have 30 observations with 10
+blocks of size 3.
+
+#### Step 3 {#step-3}
+
+Calculate single-row contrasts (see @eq-t) for the given linear combinations:
+
+- Assuming 2x3 factorial structure:
+
+  - Main effect of $A$: mean of trt set $\{0,1,2\} -$ mean of trt set
+    $\{3,4,5\}$
+
+  - Main effect of $B$: e.g. $\mu_{B1}-\mu_{B2}$ mean of $\{0,3\} -$
+    mean of $\{1,4\}$
+
+  - Interaction: e.g. $\mu_{AB11}-\mu_{AB12}-\mu_{AB21}+\mu_{AB22}$ (trt
+    0 – 1 – 3 + 4)
+
+  - Simple Effect of $B\mid A$: e.g. $\mu_{AB11}-\mu_{AB12}$ (trt 0 vs
+    trt 1)
+
+  - Simple Effect of $A\mid B$: e.g. $\mu_{AB11}-\mu_{AB21}$ (trt 0 vs
+    trt 3)
+
+- Assuming trt 0 is control treatment:
+
+  - Contrasts of trt 0 vs trt 1; trt 0 vs trt 2 $\dots$ trt 0 vs trt 5
+
+  - Lesser emphasis on other pairwise trt mean comparisons
+
+##### `SAS®`
+
+The `LSMESTIMATE` and `CONTRAST` statements are added for the effects of
+interest. The `LSMESTIMATE` statement is the most efficient way to
+compute 1-df contrasts of interest. The `ODS OUTPUT` statement creates
+datasets for the Type III Tests, estimates, and contrasts. The
+$F$-statistics are calculated for the estimates in preparation for step
+4. These statements could've been added in step 2, but we add them here
+in a separate step to be consistent with `R`.
+
+This (see @lst-SASBIBmod) is all put into a `MACRO` for ease of use.
+
+::: {#lst-SASstep3}
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+%macro step3(data, blockVar = 0.5001, residualVar = 1, subject = block);
+proc glimmix data = &data noprofile outdesign = xzmatrix;
+    class block a b;
+    model mu=a|b;
+    random intercept /subject=&subject;
+    parms (&blockVar)(&residualVar) / hold=1,2; /* parms statement sets variance components, hold keeps them at stated values */
+    lsmestimate a*b '1-A main effect' 1 1 1 -1 -1 -1,
+                    '2-B main effect' 1 -1 0 1 -1 0,
+                    '4-A|B simple effect' 1 0 0 -1 0 0,
+                    '5-B|A simple effect' 1 -1 0 0 0 0,
+                    '3-A x B interaction' 1 0 -1 -1 0 1,
+                    'control vs trt 1' 1 -1 0 0 0 0,
+                    'control vs trt 2' 1 0 -1 0 0 0,
+                    'control vs trt 3' 1 0 0 -1 0 0,
+                    'control vs trt 4' 1 0 0 0 -1 0,
+                    'control vs trt 5' 1 0 0 0 0 -1, 
+                    'trt 1 vs trt 2' 0 1 -1 0 0 0,
+                    'trt 1 vs trt 3' 0 1 0 -1 0 0 / divisor=3,2,1,1,1,1,1,1,1,1,1,1;
+    contrast 'control vs at least one trt'    b 1 -1              a*b 1 -1 0 0 0 0,
+                                              b 1 0 -1            a*b 1 0 -1 0 0 0,
+                                              a 1 -1              a*b 1 0 0 -1 0 0,
+                                              a 1 -1  b 1 -1 0    a*b 1 0 0 0 -1 0,
+                                              a 1 -1  b 1 0 -1    a*b 1 0 0 0 0 -1;*/e;
+    ods output tests3=&data._Foverall contrasts=&data._Fcontrasts lsmestimates=&data._t; /* ODS OUTPUT statement creates data set of test statistics for each contrast */
+    title "Power Analysis - &data";
+run;
+
+/* Format datasets for F-based power analyses*/
+
+data &data._1dfcontrast (Keep = Label Effect StdErr Fvalue NumDF DenDF);
+    set &data._t;
+    Fvalue = (tValue)**2;
+    NumDF = 1;
+    DenDF = DF;
+    output;
+run;
+
+%mend;
+
+%step3(bib);
+```
+
+Step 3 SAS® macro
+:::
+
+##### `R`
+
+Similar to the macro defined above, a function is defined below for this
+step for ease of use with our use case.
+
+You'll notice that the denominator degrees of freedom in the `glmmTMB`
+output (24) do not match what is reported in the [ANOVA shell
+(15)](#design-1-balanced-incomplete-block). We can calculate the
+containment degrees of freedom by obtaining the design matrices for the
+fixed and random effects with the `getME()` function, concatenating
+these matrices, and taking the difference of the number of observations
+and the rank of the concatenated matrix. See @eq-dendf.
+
+We can use the denominator degrees of freedom calculated in other
+results downstream. We employ the use of the `emmeans` [@emmeans]
+package for the rest of these results. In the Type III Tests output
+(`joint_tests()`), there is a `df` argument we can use. We can use the
+same `df` argument as above when calculating the least square means for
+the $A$ x $B$ interaction in `emmeans()`.
+
+Refer to the [beginning of step 3](#step-3) to review the estimates
+computed with `contrast()` below. The $F$-statistics are calculated for
+the estimates in preparation for step 4. We calculate contrasts (see
+@eq-F) for the given linear combinations by passing a list containing a
+sum-to-zero contrast matrix to `contrast()` and using
+`test(., joint = TRUE)`.
+
+You would replace the estimates and contrast code with the estimates and
+contrasts for your particular experiment. The `if()` statements for
+`lmerMod` and `nlme` model objects can also be removed. This code would
+only be needed if you are interested in
+[this](#why-not-use-lme4-or-nlme-for-this-purpose) section.
+
+```{r}
+step3 <- function(model){
+  if(class(model) %in% c("lmerMod", "glmmTMB")){
+   # Containment degrees of freedom
+    X <- getME(model, "X")
+    Z <- as.matrix(getME(model, "Z"))
+    if(class(model) == "glmmTMB")
+      ddf <- nrow(model$frame) - qr(cbind(X, Z))$rank
+    else
+      ddf <- nrow(model@frame) - qr(cbind(X, Z))$rank
+  }else{
+    ddf <- unique(model$fixDF$terms)
+  }
+  
+  if(class(model) == "lmerMod"){
+    # Type III Tests
+    typeIII <- cbind(joint_tests(model, df = ddf, 
+                                 lmer.df = "asymptotic"),
+                     estimate = NA, SE = NA, t.ratio = NA)
+    # LSMeans
+    lsMeans <- emmeans(model, ~ a * b, df = ddf,
+                       lmer.df = "asymptotic")
+  }else{
+    # Type III Tests
+    typeIII <- cbind(joint_tests(model, df = ddf),
+                     estimate = NA, SE = NA, t.ratio = NA)
+    # LSMeans
+    lsMeans <- emmeans(model, ~ a * b, df = ddf)
+  }
+  colnames(typeIII)[1] <- "label"
+  typeIII <- typeIII[, c("label", "df1", "df2", "estimate", "SE", "t.ratio", "F.ratio", "p.value")]
+
+  # Estimates
+  est <- as.data.frame(contrast(lsMeans, list("1-A main effect" = rep(c(1, -1), 3) / 3,
+                                              "2-B main effect" = rep(c(1, -1, 0), each = 2) / 2,
+                                              "3-A x B interaction" = c(1, -1, 0, 0, -1, 1), 
+                                              "4-A|B simple effect" = c(1, -1, rep(0, 4)),
+                                              "5-B|A simple effect" = c(1, 0, -1, rep(0, 3)),
+                                              "control vs trt 1" = c(1, 0, -1, rep(0, 3)),
+                                              "control vs trt 2" = c(1, rep(0, 3), -1, 0),
+                                              "control vs trt 3" = c(1, -1, rep(0, 4)),
+                                              "control vs trt 4" = c(1, 0, 0, -1, 0, 0),
+                                              "control vs trt 5" = c(1, rep(0, 4), -1),
+                                              "trt 1 vs trt 2" = c(0, 0, 1, 0, -1, 0),
+                                              "trt 1 vs trt 3" = c(0, -1, 1, rep(0, 3)))))
+  est <- cbind(df1 = 1, est, F.ratio = est$t.ratio ^ 2)
+  colnames(est)[c(2, 5)] <- c("label", "df2")
+  est <- est[, c("label", "df1", "df2", "estimate", "SE", "t.ratio", "F.ratio", "p.value")]
+
+  # Contrast
+  cvalot <- matrix(c(1, 0, -1, rep(0, 3),
+                     1, rep(0, 3), -1, 0,
+                     1, -1, rep(0, 4),
+                     1, 0, 0, -1, 0, 0,
+                     1, rep(0, 4), -1), 6, 5)
+
+  con <- test(contrast(lsMeans, list(cvalot)), joint = TRUE)
+  con <- cbind("label" = c("control vs at least one trt"),
+               con, estimate = NA, SE = NA, t.ratio = NA)
+  con <- con[, c("label", "df1", "df2", "estimate", "SE", "t.ratio", "F.ratio", "p.value")]
+
+  res <- rbind(typeIII, con, est)
+  if(class(model) %in% c("glmmTMB", "lme"))
+    res$Design <- toupper(model$call$data)
+  else
+    res$Design <- toupper(model@call$data)
+  return(res)
+}
+
+bibglmmTMB <- step3(bibMod)
+```
+
+### Design 2 - "Control (trt=0) vs Other 5"
+
+For the ANOVA shell and model, refer to @tbl-6 and @eq-bib,
+respectively.
+
+#### Step 1
+
+For the CVT design, we replace the BIB exemplary dataset in Step 1 with
+the CVT dataset. The rest of the program does not change.
+
+##### `SAS®`
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+data cvt;
+ input block @@;
+  do plot=1 to 3;
+   input trt @@; 
+        a=(trt>2)+1;
+        b=(trt=1)+(trt=4)+2*((trt=2)+(trt=5))+1;
+        /* MU is value for Trt response diffs to be assesed in power analysis   */
+        mu=20 + (trt=1)*(-1.25) + (trt=2)*(-2.5); 
+   output;
+  end;
+datalines;
+ 1  0 1 2
+ 2  0 1 3
+ 3  0 1 4
+ 4  0 1 5
+ 5  0 2 3
+ 6  0 2 4
+ 7  0 2 5
+ 8  0 3 4
+ 9  0 3 5
+10  0 4 5
+;
+```
+
+##### `R`
+
+```{r}
+trt <- c(0:2, 0:1, 3, 0:1, 4, 0:1, 5, 0, 2:3, 0, 2, 4, 0, 2, 5, 0, 3:4,
+         0, 3, 5, 0, 4:5)
+cvt <- data.frame(obs = 1:30,
+                  block = factor(rep(1:10, each = 3)),
+                  plot = factor(rep(1:3, 10)),
+                  trt = factor(trt),
+                  a = factor(as.numeric(trt > 2) + 1),
+                  b = factor((trt == 1) + (trt == 4) + 2 * ((trt == 2) + (trt == 5)) + 1),
+                  mu = 20 + (trt == 1) * (-1.25) + (trt == 2) * (-2.5))
+```
+
+#### Step 2
+
+##### `SAS®`
+
+Replace the `bib` dataset with the `cvt` dataset into the code shown in @lst-SASBIBmod. The whole set of contrasts with `PROC GLIMMIX` is shown in step 3.
+
+##### `R`
+
+We employ a shortcut here by refitting the same model (see @lst-RBIBmod)
+on the CVT exemplary dataset with the `update()` function. This is an
+easier way to update the existing model to use the CVT dataset instead
+of using the full `glmmTMB()` call.
+
+```{r}
+cvtMod <- update(bibMod, data = cvt)
+```
+
+It is helpful to use the `summary()` function to make sure everything is
+specified correctly.
+
+```{r}
+summary(cvtMod)
+```
+
+#### Step 3
+
+##### `SAS®`
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+%step3(cvt);
+```
+
+##### `R`
+
+```{r}
+cvtglmmTMB <- step3(cvtMod)
+```
+
+### Design 3 - Disconnected Nested Factorial (a.k.a. split-plot) {#design-3---disconnected-nested-factorial-a.k.a.-split-plot}
+
+Here is the ANOVA shell for @tbl-8:
+
+```{r}
+#| echo: false
+#| label: tbl-8
+#| tbl-cap: "*Completed ANOVA shell for DNF*"
+
+table8 <- data.frame(
+  col1 = c("", "Block", rep("", 2), "Obs(Block)", "Total"),
+  col2 = c("", "$10-1=9$", rep("", 2), "$(3-1)10=20$", "$30-1=29$"),
+  col3 = c("Factor A", "", "Factor B", "A*B", rep("", 2)),
+  col4 = c("$2-1=1$", "", "$3-1=2$", "$(2-1)(3-1)=2$", rep("", 2)),
+  col5 = c("Factor A", "Block(A)", "Factor B", "A*B", "Block(A)*B", ""),
+  col6 = c("$2-1=1$", "$10-2=8$", "$3-1=2$", "$(2-1)(3-1)=2$", "$(3-1)10+2-2(3)=16$", "$30-1=29$"),
+  col7 = c("$\\alpha_i$", "$r_{k(i)}{~}iid{~}N(0, 0.5)$", "$\\beta_j$", "$(\\alpha\\beta)_{ij}$", "$e_{ijk}{~}iid{~}N(0, 1)$", "")
+)
+
+table8 <- table8 %>%
+  gt() %>%
+  # tab_header(title = md("Table 8: *Completed ANOVA shell for DNF*")) %>%
+  cols_label(
+    col1 = "Source", col2 = "df", col3 = "Source",
+    col4 = "df", col5 = "Source", col6 = "df", col7 = ""
+  ) %>%
+  tab_spanner(label = md("**Design structure**"), columns = 1:2) %>%
+  tab_spanner(label = md("**Trt structure**"), columns = 3:4) %>%
+  tab_spanner(label = md("**Combined**"), columns = 5:6) %>%
+  tab_spanner(label = md("**Model effect + distribution**"), columns = 7) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_stub(rows = everything())
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  )
+
+if(knitr::is_html_output()){
+  table8 %>% fmt_markdown(columns = everything())
+}else{
+  table8 %>% as_raw_html()
+}
+```
+
+The linear predictor for the DNF is
+
+$$\begin{equation}
+  \eta_{ijk} = \mu + \alpha_i + r_{k(i)} + \beta_j + (\alpha\beta)_{ij}
+\quad\text{for } i=1,2; \ j=1,2,3; \ k=1,2,3,\dots,10
+\end{equation}$$ {#eq-dnf}
+
+where
+
+- $\mu$ represents the overall population mean
+
+- $\alpha_i$ represents the fixed effect corresponding to the $i^{th}$
+  level of Factor $A$
+
+- $r_{k(i)}$ represents the random effect corresponding to the $k^{th}$
+  level of Factor $Block$ within Factor $A$ (a.k.a the main plot error
+  in the split-plot design)
+
+- $\beta_j$ represents the fixed effect corresponding to the $j^{th}$
+  level of Factor $B$
+
+- $(\alpha\beta)_{ij}$ represents the fixed effect corresponding to the
+  interaction of Factor $A$ and $B$
+
+The factor effects model is
+
+$$\begin{equation}
+  y_{ijk} = \eta_{ijk} + e_{ijk}
+\end{equation}$$ {#eq-dnf2}
+
+where
+
+- $e_{ijk}$ represents the random error corresponding to the $y_{ijk}$
+  observation
+
+#### Step 1
+
+For the DNF design, we replace the BIB or CVT exemplary dataset in Step
+1 with the DNF dataset. The rest of the program does not change.
+
+##### `SAS®`
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+data dnf;
+    input block @@;
+    do plot=1 to 3;
+        input trt @@; 
+        a=(trt>2)+1;
+        b=(trt=1)+(trt=4)+2*((trt=2)+(trt=5))+1;
+        /* MU is value for Trt response diffs to be assesed in power analysis   */
+        mu=20 + (trt=1)*(-1.25) + (trt=2)*(-2.5); 
+        output;
+    end;
+datalines;
+ 1  0 1 2
+ 2  3 4 5
+ 3  0 1 2
+ 4  3 4 5
+ 5  0 1 2
+ 6  3 4 5
+ 7  0 1 2
+ 8  3 4 5
+ 9  0 1 2
+10  3 4 5
+;
+```
+
+##### `R`
+
+```{r}
+trt <- rep(0:5, 5)
+dnf <- data.frame(obs = 1:30,
+                  block = factor(rep(1:10, each = 3)),
+                  plot = factor(rep(1:3, 10)),
+                  trt = factor(trt),
+                  a = factor(as.numeric(trt > 2) + 1),
+                  b = factor((trt == 1) + (trt == 4) + 2 * ((trt == 2) + (trt == 5)) + 1),
+                  mu = 20 + (trt == 1) * (-1.25) + (trt == 2) * (-2.5))
+```
+
+#### Step 2
+
+##### `SAS®`
+
+Replace the `bib` dataset with the `dnf` dataset into the code shown in @lst-SASBIBmod. The whole set of contrasts with `PROC GLIMMIX` is shown in step 3.
+
+##### `R`
+
+We employ a shortcut here by refitting the same model (see @lst-RBIBmod)
+on the DNF exemplary dataset with the `update()` function:
+
+```{r}
+dnfMod <- update(bibMod, data = dnf)
+```
+
+It is helpful to use the `summary()` function to make sure everything is
+specified correctly.
+
+```{r}
+summary(dnfMod)
+```
+
+#### Step 3
+
+##### `SAS®`
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+%step3(dnf);
+```
+
+##### `R`
+
+```{r}
+dnfglmmTMB <- step3(dnfMod)
+```
+
+### Design 4 - Randomized Complete Block
+
+#### Calculating the variance components
+
+Variance information: for designs respecting natural block size (BIB,
+CVT and DNF), block variance $\sigma_r^2=0.5$ and unit (within block)
+variance $\sigma_e^2=1$. Complete block alters variance: complete block
+variance $\sigma_f^2=0.23$ and unit (within block) variance
+$\sigma_e^2=1.26$. The method for the incomplete to complete block
+variance conversion is shown in @stroup2016 and Stroup et al. [-@stroup2024a; -@stroup2024b] in @eq-ems.
+
+For our example, we have
+
+$$\begin{aligned}
+  \sigma_f^2 &= \frac{1}{ab}[EMS(Block) - EMS(Error)]\\
+  &= \frac{1}{2(3)}\left(\frac{21}{10} - 1\right)\\
+  &= \frac{1}{6}\left(\frac{11}{10}\right)\\
+  &= \frac{11}{60}\\
+\end{aligned}$$ {#eq-forced}
+
+Since $\sigma_f^2 + \sigma_{e^*}^2 = 1.5$, we have
+
+$$\begin{aligned}
+  \sigma_e^{2*} &= \frac{3}{2} - \sigma_f^2\\
+  &=  \frac{3}{2} - \frac{11}{60}\\
+  &= \frac{79}{60}\\
+\end{aligned}$$ {#eq-residual}
+
+##### `SAS®`
+
+Notice that in the BIB design, @lst-SASstep3 has `OUTDESIGN = xzmatrix`
+included as an option in `PROC GLIMMIX`. This extracts the fixed and
+random effects design matrices needed to calculate the expected mean
+squares used to calculate (co)variance components that don't respect the
+natural block size.
+
+To perform the matrix algebra needed to compute the (co)variance
+components, the `SAS®` user will need to be comfortable with using
+`PROC IML` [@iml].
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+/* Calculating the variance components (\sigma_R^2 and \sigma_E^2) */
+/* Stroup says that the variance component for block (\sigma_R^2) can be calculated with 
+   expected mean squares with the knowledge that \sigma_B^2 = 0.5 and \sigma_U^2 = 1 from 
+   the BIB design */
+
+/* We have 6 treatments within each block. */
+
+** \sigma_R^2 = 1/6[EMS(blk) - EMS(error)]
+** \sigma_R^2 = 1/6[trace({[H - H_{T}] / rank(X_{Blk})}{V}) - trace({[I - H] / [N - rank({X})]}{V})]
+** where I is the identity matrix; ** where V = ZGZ' + R; ** G denotes the random effects
+** matrix, and R denotes the residual effects matrix; ** where the hat matrices
+** representing the leverages are H = X(X'X)^-X' and H_{T} = X_{T}(X_{T}'X_{T})^-X_{T}';
+
+/* Design matrix for trt */
+data X_T;
+    set xzmatrix;
+    keep _X:;
+run;
+
+/* Design matrix for block */
+data X_Blk;
+    set bib;
+    _X1 = (block = 1);
+    _X2 = (block = 2);
+    _X3 = (block = 3);
+    _X4 = (block = 4);
+    _X5 = (block = 5);
+    _X6 = (block = 6);
+    _X7 = (block = 7);
+    _X8 = (block = 8);
+    _X9 = (block = 9);
+    _X10 = (block = 10);
+    keep _X:;
+run;
+
+proc iml;
+    use X_T;
+    read all var _ALL_;
+    X_T = _X1 || _X2 || _X3 || _X4 || _X5 || _X6 || _X7 || _X8 || _X9 || _X10 || _X11 || _X12; /* Design matrix for trt */
+    H_T = X_T * ginv(X_T` * X_T) * X_T`; /* Hat matrix for trt */
+    use X_Blk;
+    read all var _ALL_;
+    X_Blk = _X1 || _X2 || _X3 || _X4 || _X5 || _X6 || _X7 || _X8 || _X9 || _X10; /* Design matrix for block */ 
+    X = X_T || X_Blk; /* Design matrix */
+    H = X * ginv(X` * X) * X`; /* Hat matrix */
+    Z = {1,
+         1,
+         1}; /* Design matrix for random effects */
+    G = diag(0.5); /* G matrix for random effects */
+    R = I(3); /* R matrix for residual effects */
+    V_Blk = Z * G * Z` + R; /* Marginal variance-covariance matrix (V_Blk) */
+    /* Create the block-diagonal matrix */
+    V = I(10) @ V_Blk;
+    /* The expected mean square for block */
+    EMSblk = sum(diag(((H - H_T) / ncol(X_Blk)) * V));
+    print EMSblk;
+    /* The expected mean square for error */
+    EMSerror = sum(diag(((I(nrow(H)) - H) / (nrow(X) - (ncol(X) - 7))) * V));
+    print EMSerror;
+    /* The variance component for block (\sigma_R^2) */
+    sigma2R = (1 / 6) * (EMSblk - EMSerror);
+    print sigma2R;
+    /* The variance component for error (\sigma^2) */
+    sigma2E = 1.5 - sigma2R;
+    print sigma2E;
+quit;
+```
+
+##### `R`
+
+Model matrices
+
+We have design matrices $\mathbf{X_T}$, $\mathbf{X_{Blk}}$, and
+$\mathbf{X}$, where $\mathbf{X} = \mathbf{X_T}\mid\mathbf{X_{Blk}}$:
+
+```{r}
+X_T <- model.matrix( ~ a * b, data = bib, contrasts.arg = list(a = "contr.SAS", b = "contr.SAS"))
+X_Blk <- model.matrix( ~ 0 + block, data = bib, contrasts.arg = list(block = "contr.SAS"))
+X <- model.matrix( ~ a * b + block, data = bib, contrasts.arg = list(a = "contr.SAS", b = "contr.SAS", block = "contr.SAS"))
+```
+
+Hat matrices
+
+```{r}
+H <- X %*% solve(crossprod(X)) %*% t(X)
+H_T <- X_T %*% solve(crossprod(X_T)) %*% t(X_T)
+```
+
+The $\mathbf{V}$ matrix
+
+```{r}
+Z <- rep(1, 3)
+G <- matrix(0.5, 1)
+R <- diag(1, 3)
+
+V <- kronecker(diag(1, 10), Z %*% G %*% t(Z) + R)
+```
+
+The expected mean squares for block and error
+
+```{r}
+EMSblk <- sum(diag(((H - H_T) / qr(X_Blk)$rank) %*% V))
+EMSerror <- sum(diag(((diag(1, nrow(H)) - H) / (nrow(bib) - qr(X)$rank)) %*% V))
+```
+
+The variance component for block ($\sigma_r^2$)
+
+```{r}
+(sigma2R <- (1 / 6) * (EMSblk - EMSerror))
+```
+
+Since $\sigma_r^2 + \sigma_e^2 = 0.5 + 1 = 1.5$ then
+$\sigma_{e^*}^2 = 1.5 - \sigma_r^2$ for the error variance.
+
+```{r}
+(sigma2E <- 1.5 - sigma2R)
+```
+
+Here is the ANOVA shell for @tbl-9:
+
+```{r}
+#| echo: false
+#| label: tbl-9
+#| tbl-cap: "*Completed ANOVA shell for RCB*"
+
+table9 <- data.frame(
+  col1 = c("Forced Block", rep("", 3), "Obs(Forced Block)", "Total"),
+  col2 = c("$\\left\\lceil\\frac{10}{2}\\right\\rceil-1=4$", rep("", 3), "$[2(3)-1]\\left\\lceil\\frac{10}{2}\\right\\rceil=25$", "$30-1=29$"),
+  col3 = c("", "Factor A", "Factor B", "A*B", rep("", 2)),
+  col4 = c("", "$2-1=1$", "$3-1=2$", "$(2-1)(3-1)=2$", rep("", 2)),
+  col5 = c("Forced Block", "Factor A", "Factor B", "A*B", "Block(A)*B", ""),
+  col6 = c("$\\left\\lceil\\frac{10}{2}\\right\\rceil-1=4$", "$2-1=1$", "$3-1=2$", "$(2-1)(3-1)=2$", "$[2(3)-1]\\left\\lceil\\frac{10}{2}\\right\\rceil-2(3)+1=20$", "$30-1=29$"),
+  col7 = c("$f_{k}{~}iid{~}N(0, 0.23)$", "$\\alpha_i$", "$\\beta_j$", "$(\\alpha\\beta)_{ij}$", "$e_{ijk}{~}iid{~}N(0, 1.26)$", "")
+)
+
+table9 <- table9 %>%
+  gt() %>%
+  # tab_header(title = md("Table 9: *Completed ANOVA shell for RCB*")) %>%
+  cols_label(
+    col1 = "Source", col2 = "df", col3 = "Source",
+    col4 = "df", col5 = "Source", col6 = "df", col7 = ""
+  ) %>%
+  tab_spanner(label = md("**Design structure**"), columns = 1:2) %>%
+  tab_spanner(label = md("**Trt structure**"), columns = 3:4) %>%
+  tab_spanner(label = md("**Combined**"), columns = 5:6) %>%
+  tab_spanner(label = md("**Model effect + distribution**"), columns = 7) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_stub(rows = everything())
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  )
+
+if(knitr::is_html_output()){
+  table9 %>% fmt_markdown(columns = everything())
+}else{
+  table9 %>% as_raw_html()
+}
+```
+
+The linear predictor for the RCB is
+
+$$\begin{equation}
+  \eta_{ijk} = \mu + f_k + \alpha_i + \beta_j + (\alpha\beta)_{ij}
+\quad\text{for } i=1,2; \ j=1,2,3; \ k=1,2,3,4,5
+\end{equation}$$ {#eq-rcb}
+
+where
+
+- $\mu$ represents the overall population mean
+
+- $f_k$ represents the random effect corresponding to the $k^{th}$ level
+  of Factor $Rep$
+
+- $\alpha_i$ represents the fixed effect corresponding to the $i^{th}$
+  level of Factor $A$
+
+- $\beta_j$ represents the fixed effect corresponding to the $j^{th}$
+  level of Factor $B$
+
+- $(\alpha\beta)_{ij}$ represents the fixed effect corresponding to the
+  interaction of Factor $A$ and $B$
+
+The factor effects model is
+
+$$\begin{equation}
+  y_{ijk} = \eta_{ijk} + e_{ijk}
+\end{equation}$$ {#eq-rcb2}
+
+where
+
+- $e_{ijk}$ represents the random error corresponding to the $y_{ijk}$
+  observation
+
+#### Step 1
+
+As we've described in [Candidate Designs](#candidate-designs), the RCB
+design redefines the 10 incomplete blocks in the DNF as 5 forced
+complete blocks.
+
+##### `SAS®`
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+/* here, exemplary design is just the disconnected design with blocks redefined         */
+/* i.e. natural blocks 1 and 2 are complete block 1, 3 and 4 are complete block 2, etc. */
+
+data rcb;
+    set dnf;
+    c_block=ceil(block/2);
+run;
+```
+
+##### `R`
+
+```{r}
+rcb <- dnf
+rcb$c_block <- factor(ceiling(as.numeric(as.character(rcb$block)) / 2))
+```
+
+#### Step 2
+
+##### `SAS®`
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+proc glimmix data=rcb noprofile;
+	class block a b;
+	model mu=a|b;
+	random intercept /subject=c_block;
+	parms (0.23)(1.26) / hold=1,2;      /* parms statement reflects impact of disregarding natural block size */
+                                     /*   on variances: natural block block_var=0.5, error_var=1 means     */
+                                     /* in this case, complete block_var=0.23 and residual_var=1.26         */
+                         /* Scenario 2 in GLMM 2nd: if natural blocks have block_var=5, residual_var=1     */
+                         /*  then complete block variances are C-block_var=2.01, C_block residual var=3.99 */
+run;
+```
+
+##### `R` {#r-11}
+
+We refit the BIB model based on the updated (co)variances calculated
+from expected mean squares and forced complete block with the updated
+dataset. We can either reference @tbl-7 or select the appropriate code
+below to make sure the residual variance is parameterized correctly.
+
+```{r}
+# sigma2R <- 0.23
+# sigma2E <- 1.26
+
+if(packageVersion("glmmTMB") < "1.1.9"){
+  rcbMod <- update(bibMod, formula = mu ~ a * b + (1 | c_block), data = rcb, 
+                   start = list(theta = log(sqrt(0.23)),
+                                betad = log(1.26)))
+}else if(packageVersion("glmmTMB") == "1.1.9"){
+  rcbMod <- update(bibMod, formula = mu ~ a * b + (1 | c_block), data = rcb, 
+                   start = list(theta = log(sqrt(0.23)),
+                                betad = log(sqrt(1.26)))) 
+}else{
+  rcbMod <- update(bibMod, formula = mu ~ a * b + (1 | c_block), data = rcb, 
+                   start = list(theta = log(sqrt(0.23)),
+                                betadisp = log(sqrt(1.26)))) 
+}
+
+# rcbMod <- updateResidualVariance(rcbMod, sigma2E)
+```
+
+It is helpful to use the `summary()` function to make sure everything is
+specified correctly.
+
+```{r}
+summary(rcbMod)
+```
+
+#### Step 3
+
+##### `SAS®`
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+%step3(rcb, blockVar = 0.23, residualVar = 1.26, subject = c_block);
+```
+
+##### `R`
+
+```{r}
+rcbglmmTMB <- step3(rcbMod)
+```
+
+### Final Result {#final-result}
+
+This section puts all the results together in both software
+implementations by either merging the results for each design by the
+contrast of interest or by binding the columns/rows.
+
+#### `SAS®`
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+proc sort data=bib_1dfcontrast;
+    by label;
+proc sort data=cvt_1dfcontrast;
+    by label;
+proc sort data=dnf_1dfcontrast;
+    by label;
+proc sort data=rcb_1dfcontrast;
+    by label;
+data precision;
+    merge bib_1dfcontrast(rename = (StdErr = SE_bib)) 
+          cvt_1dfcontrast(rename = (StdErr = SE_cvt)) 
+          dnf_1dfcontrast(rename = (StdErr = SE_dnf)) 
+          rcb_1dfcontrast(rename = (StdErr = SE_rcb));
+    by label;
+    drop Fvalue NumDF DenDF;
+run;
+          
+proc export data=precision
+    outfile='precision.csv'
+    dbms=csv
+    replace;
+run;
+
+title "Standard Errors from Precision Analyses for Competing Designs Using PROC GLIMMIX";
+proc print data = precision;
+run;
+          
+proc transpose data = precision out = precisionLong(drop = _LABEL_ rename = (COL1 = SE));
+	var SE_bib SE_cvt SE_dnf SE_rcb;
+	by Effect Label;
+run;
+
+data precisionLong;
+	set precisionLong;
+	Design = upcase(substr(_NAME_, 4));
+	Estimate = 0;
+	LowerSE = Estimate - SE;
+run;
+
+proc sgplot data = precisionLong;
+	scatter y = Estimate x = Label / group = Design yerrorlower = LowerSE yerrorupper = SE groupdisplay = cluster;
+	yaxis label = "Estimate ± SE";
+run;
+```
+
+#### `R`
+
+@tbl-10 shows the results of the precision analysis completed using `PROC GLIMMIX` and
+`glmmTMB` + `emmeans` in tabular format.
+
+```{r}
+#| echo: false
+#| label: tbl-10
+#| tbl-cap: "*Standard Errors from Precision Analyses for Competing Designs Using PROC GLIMMIX and glmmTMB + emmeans*"
+
+dataset <- rbind(bibglmmTMB, cvtglmmTMB, dnfglmmTMB, rcbglmmTMB)
+precision <- dataset[!is.na(dataset$t.ratio), ]
+reshapedPrecision <- reshape(precision[, c("label", "SE", "Design")], 
+                             direction = "wide",
+                             idvar = "label", timevar = "Design")
+
+if(file.exists("precision.csv")){
+  SASprecision <- read.csv("precision.csv")[, -1]
+  reshapedPrecision <- merge(SASprecision, reshapedPrecision, by.x = "Label", by.y = "label")
+}else{
+  stop("precision.csv not found.")
+}
+
+table10 <- gt(reshapedPrecision) %>%
+  # tab_header(
+  #   title = md("Table 10: *Standard Errors from Precision Analyses for Competing Designs Using PROC GLIMMIX and glmmTMB + emmeans*")
+  # ) %>%
+  cols_label(
+    Label = md("**label**"), 
+    SE_bib = md("**BIB**"), 
+    SE_cvt = md("**CVT**"),
+    SE_dnf = md("**DNF**"),
+    SE_rcb = md("**RCB**"),
+    SE.BIB = md("**BIB**"), 
+    SE.CVT = md("**CVT**"),
+    SE.DNF = md("**DNF**"),
+    SE.RCB = md("**RCB**")
+  ) %>%
+  tab_spanner(
+    label = md("**SAS®: PROC GLIMMIX**"),
+    columns = colnames(reshapedPrecision)[grepl("_", colnames(reshapedPrecision), fixed = TRUE)]
+  ) %>%
+  tab_spanner(
+    label = md("**R: glmmTMB + emmeans**"),
+    columns = colnames(reshapedPrecision)[grepl(".", colnames(reshapedPrecision), fixed = TRUE)]
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  ) %>%
+  fmt_number(
+    columns = colnames(reshapedPrecision)[colnames(reshapedPrecision) != "label"],
+    decimals = 4
+  )
+
+if(knitr::is_html_output()){
+  table10
+}else{
+  table10 %>% as_raw_html()
+}
+```
+
+With the exception of the main effect of $A$ for the BIB design, the `SAS® PROC GLIMMIX` and the `R` `glmmTMB` + `emmeans` standard errors for the precision analysis match up to four decimal places. [@fig-1] shows the results of the precision analysis completed using
+`glmmTMB` + `emmeans` (and `SAS® PROC GLIMMIX`) in a plot. Recall for the precision analysis example that $\mu$ can essentially be
+set to any value since only the standard errors are of interest here.
+Note that this means that comparisons should only be made between the
+designs within each contrast of interest and not across contrasts.
+
+```{r}
+#| echo: false
+#| out.width: "100%"
+#| label: fig-1
+#| fig-cap: "*Standard Errors from Precision Analyses for Competing Designs Using glmmTMB + emmeans*"
+#| fig-cap-location: top
+
+library(ggplot2)
+ggplot(precision, aes(x = label, y = 0, color = Design)) +
+  geom_point(position = position_dodge(0.5)) +
+  geom_errorbar(aes(ymin = 0 - SE, ymax = 0 + SE),
+                position = position_dodge(0.5),
+                width = 0.5) +
+  ylab("Estimate ± SE") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_color_colorblind()
+```
+
+### Recommendations
+
+The BIB design is recommended if the main effects are of interest. In
+the presence of an interaction, the interaction effect would take
+precedence. So, we can eliminate the BIB design from further
+consideration. The DNF design is recommended if the omnibus AxB
+interaction is of interest. Even if the post-hoc comparisons are the
+main comparisons of interest, "purists" may still look at the omnibus
+test first for Type I error protection. If focusing on the ANOVA-like
+table results is the goal, the researcher may be satisfied with the DNF
+design. If the researcher is actually interested in simple effects and
+control vs treatment comparisons, the CVT is the design of choice here.
+The "Forced" RCB is overrated sometimes as it did not outperform the
+other designs for any of these comparisons, but it is commonly used in
+many experimental studies.
+
+As we mentioned above, we are not particularly interested in the non-CVT
+(trt vs other trt) comparisons. Let's say that we are most interested in
+the post-hoc comparisons that we have following our interaction. We
+recommend the DNF design for the interaction itself, but we recommend
+the CVT for the follow-up comparisons. Let's proceed with the CVT design
+for the power analysis.
+
+You'll notice in step 3 that we've already included a joint contrast of
+control vs all treatments. The `SAS®` and `R` code would be updated to
+include this contrast in step 4 based on the precision analysis, but
+we've already added it in the previous step to simplify the workflow and
+not duplicate code.
+
+## Power Analysis
+
+### Step 4
+
+From @eq-nc2 and @eq-power, it is implied that the numerator degrees of
+freedom is equal to the $rank(\mathbf{K})$. From mathematical
+statistics, we know that a test statistic from the $t$-distribution
+squared follows a $F-$distribution with $rank(\mathbf{K}) = 1$ numerator
+degrees of freedom, so this can be applied to estimates with a single
+row:
+
+$$\phi = NumDF(F^*) = NumDF(t^*)^2$$ {#eq-nc3}
+
+#### `SAS®`
+
+We calculate non-centrality parameters, critical values (`Finv`), and
+use probability functions to calculate power for the CVT design from the
+$F$-distribution (`probF`).
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+data cvt_Power;
+	set cvt_Foverall cvt_Fcontrasts cvt_1dfcontrast;
+	nc_param = numDF * Fvalue;
+	alpha = 0.05;
+	Fcrit = Finv(1-alpha, numDF, denDF, 0);
+	Power_CVT = 1 - probF(Fcrit, numDF, denDF, nc_param);
+	drop StdErr;
+	output;
+run;
+
+data cvt_Power;
+	set cvt_Power;
+  where Label in ("", "A|B simple effect", "B|A simple effect", "control vs at least one trt", "control vs trt 1", 
+                    "control vs trt 1", "control vs trt 2", "control vs trt 3", "control vs trt 4", "control vs trt 5");
+  if Label = "" then Label = Effect;
+run;
+```
+
+```{sas}
+*| echo: false;
+
+proc export data=cvt_Power
+    outfile='power.csv'
+    dbms=csv
+    replace;
+run;
+```
+
+#### `R`
+
+The syntax here is nearly identical to `SAS®`. We just replace `Finv`
+with `qf` and `probF` with `pf`:
+
+```{r}
+exemplaryPower <- dataset
+exemplaryPower$nc <- exemplaryPower$df1 * exemplaryPower$F.ratio
+exemplaryPower$alpha <- 0.05
+exemplaryPower$F.crit <- qf(1 - exemplaryPower$alpha, exemplaryPower$df1, exemplaryPower$df2)
+exemplaryPower$power <- 1 - pf(exemplaryPower$F.crit, exemplaryPower$df1, exemplaryPower$df2, exemplaryPower$nc)
+```
+
+### Final Result {#final-result-1}
+
+#### Tables
+
+`SAS®`
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+proc print data = cvt_Power;
+run;
+```
+
+`R`
+
+See @tbl-11 for the power analysis for competing designs using
+`glmmTMB`. The full set of power results can be seen in @tbl-13.
+
+```{r}
+#| echo: false
+#| label: tbl-11
+#| tbl-cap: "*Power Analyses for CVT Design Using PROC GLIMMIX and glmmTMB + emmeans*"
+
+powerWide <- exemplaryPower[exemplaryPower$Design == "CVT", ]
+cvtPower <- powerWide[powerWide$label %in% c("a", "b", "a:b", "4-A|B simple effect", "5-B|A simple effect", "control vs at least one trt", "control vs trt 1", "control vs trt 1", "control vs trt 2", "control vs trt 3", "control vs trt 4", "control vs trt 5"), ]
+
+cvtPower <- cvtPower[, !(colnames(cvtPower) %in% c("estimate", "SE", "t.ratio", "p.value", "Design", "alpha"))]
+
+if(file.exists("power.csv")){
+  SASpower <- read.csv("power.csv")[, -c(1, 5, 8)]
+  cvtPower <- merge(SASpower, cvtPower, by.x = "Label", by.y = "label")
+}else{
+  stop("power.csv not found.")
+}
+
+table11 <- gt(cvtPower) %>%
+  # tab_header(
+  #   title = md("Table 11: *Power Analyses for CVT Design Using PROC GLIMMIX and glmmTMB + emmeans*")
+  # ) %>%
+  cols_label(
+    Label = md("**label**"),
+    NumDF = md("**NumDF**"),
+    DenDF = md("**DenDF**"),
+    FValue = md("**FValue**"),
+    nc_param = md("**$\\phi$**"),
+    Fcrit = md("**Fcrit**"),
+    Power_CVT = md("**Power**"),
+    df1 = md("**NumDF**"),
+    df2 = md("**DenDF**"),
+    F.ratio = md("**FValue**"),
+    nc = md("**$\\phi$**"),
+    F.crit = md("**Fcrit**"),
+    power = md("**Power**"),
+  ) %>%
+  tab_spanner(
+    label = md("**SAS®: PROC GLIMMIX**"),
+    columns = 2:7
+  ) %>%
+  tab_spanner(
+    label = md("**R: glmmTMB + emmeans**"),
+    columns = 8:13
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  ) %>%
+  fmt_number(
+    columns = colnames(cvtPower)[colnames(cvtPower) != "Label"],
+    decimals = 4
+  )
+
+if(knitr::is_html_output()){
+  table11
+}else{
+  table11 %>% as_raw_html()
+}
+```
+
+With the exception of the main effect of $B$, the `SAS® PROC GLIMMIX` and the `R` `glmmTMB` + `emmeans` power calculations match up to four decimal places.
+
+For the purpose of this particular example, we are finished. However, if
+the researcher has more resources, we can go a step further and
+calculate how many blocks are needed for 80% and/or 90% power. Power for
+the control vs treatment 1 contrast is quite low. Remember, to keep the
+properties of this design intact (and all other candidate designs
+above), we would need to add another 10 blocks (5 reps) each.
+
+<!-- #### Figures -->
+
+<!-- `SAS` -->
+
+<!-- ```{sas, collectcode = TRUE, eval = FALSE} -->
+
+<!-- proc sort data = power; -->
+
+<!--    by Effect Label;     -->
+
+<!-- run; -->
+
+<!-- proc transpose data = power out = powerLong(rename = (COL1 = Power)); -->
+
+<!--    var Power_bib Power_cvt Power_dnf Power_rcb; -->
+
+<!--    by Effect Label; -->
+
+<!-- run; -->
+
+<!-- data powerLong; -->
+
+<!--    set powerLong; -->
+
+<!--    Design = upcase(substr(_NAME_, 7)); -->
+
+<!-- run; -->
+
+<!-- proc sgplot data = powerLong; -->
+
+<!--    scatter y = Power x = Label / group = Design groupdisplay = cluster; -->
+
+<!--    yaxis label = "Power"; -->
+
+<!-- run; -->
+
+<!-- ``` -->
+
+<!-- `R` -->
+
+<!-- ```{r, out.width="100%"} -->
+
+<!-- ggplot(power, aes(x = label, y = power, color = Design)) + -->
+
+<!--   geom_point(position = position_dodge(0.9)) + -->
+
+<!--   ylab("Power") + -->
+
+<!--   theme(axis.text.x = element_text(angle = 90)) -->
+
+<!-- ``` -->
+
+## Frequently Asked Questions
+
+### I've never seen this exemplary dataset approach to power analysis before. How does simulation compare to this?
+
+#### Simulation
+
+##### `SAS®`
+
+```{sas}
+*| collectcode: true;
+*| eval: false;
+
+%macro simulation(data, nsims = 10000, blockVar = 0.5001, residualVar = 1, subject = block);
+ods exclude all;
+%do i = 1 %to &nsims;
+    data &data;
+        retain rk;
+        set &data;
+        by &subject;
+        if first.&subject then rk = rand('Normal', 0, sqrt(&blockVar));
+        eijk = rand('Normal', 0, sqrt(&residualVar));
+        yijk&i = mu + rk + eijk;
+    run;
+    
+    proc glimmix data = &data;
+        class &subject a b;
+        model yijk&i = a|b;
+        random intercept / subject = &subject;
+        lsmestimate a*b 'A main effect' 1 1 1 -1 -1 -1,
+                        'B main effect' 1 -1 0 1 -1 0,
+                        'A|B simple effect' 1 0 0 -1 0 0,
+                        'B|A simple effect' 1 -1 0 0 0 0,
+                        'A x B interaction' 1 0 -1 -1 0 1,
+                        'control vs trt 1' 1 -1 0 0 0 0,
+                        'control vs trt 2' 1 0 -1 0 0 0,
+                        'control vs trt 3' 1 0 0 -1 0 0,
+                        'control vs trt 4' 1 0 0 0 -1 0,
+                        'control vs trt 5' 1 0 0 0 0 -1, 
+                        'trt 1 vs trt 2' 0 1 -1 0 0 0,
+                        'trt 1 vs trt 3' 0 1 0 -1 0 0 / divisor=3,2,1,1,1,1,1,1,1,1,1,1;
+        contrast 'control vs at least one trt'    b 1 -1              a*b 1 -1 0 0 0 0,
+                                                  b 1 0 -1            a*b 1 0 -1 0 0 0,
+                                                  a 1 -1              a*b 1 0 0 -1 0 0,
+                                                  a 1 -1  b 1 -1 0    a*b 1 0 0 0 -1 0,
+                                                  a 1 -1  b 1 0 -1    a*b 1 0 0 0 0 -1;*/e;
+        ods output tests3=&data._Foverall&i contrasts=&data._Fcontrasts&i lsmestimates=&data._t&i; /* ODS OUTPUT statement creates data set of test statistics for each contrast */
+        title "Power Analysis";
+    run;
+%end;
+
+ods exclude none;
+
+data Foverall;
+    set &data._Foverall:;
+    reject = (ProbF <= 0.05);
+run;
+
+proc sort data = Foverall;
+    by Effect;
+run;
+
+proc freq data = Foverall;
+    tables reject / binomial(cl = wald level = "1");
+    by Effect;
+run;
+
+data Fcontrasts;
+
+    set &data._Fcontrasts:;
+    reject = (ProbF <= 0.05);
+run;
+
+proc sort data = Fcontrasts;
+    by Label;
+run;
+
+proc freq data = Fcontrasts;
+    tables reject / binomial(cl = wald level = "1");
+    by Label;
+run;
+
+data t(Keep = Label Effect StdErr reject);
+    set &data._t:;
+    reject = (Probt <= 0.05);   
+    output;
+run;
+
+proc sort data = t;
+    by Label;
+run;
+
+proc freq data = t;
+    tables reject / binomial(cl = wald level = "1");
+    by Label;
+run;
+%mend;
+
+%simulation(data = bib, nsims = 100);
+%simulation(data = cvt, nsims = 100);
+%simulation(data = dnf, nsims = 100);
+%simulation(data = rcb, nsims = 100, blockVar = 0.23, residualVar = 1.26, subject = c_block);
+```
+
+##### `R`
+
+The `R` package `glmmTMB` allows the user to simulate a response
+variable from a fitted `glmmTMB` model object. We have fitted models
+that were used on our exemplary datasets above. This is a great
+opportunity to compare the two sets of results. The steps are as
+follows:
+
+1.  Use the `simulate.glmmTMB()` function from `glmmTMB`. The user needs
+    to provide the `glmmTMB` model object at a minimum and (optionally)
+    the number of simulations and random seed.
+
+2.  Update your `glmmTMB` model to fit models with each simulated
+    response variable. Make sure to set the `start` and `map` arguments
+    equal to `NULL` since we now have (co)variances that can be
+    calculated.
+
+3.  Calculate the mean of how many times the null hypothesis was
+    rejected, and formulate the corresponding confidence interval for
+    each effect.
+
+4.  Calculate the mean of each (co)variance component, and formulate the
+    corresponding confidence interval for each effect by obtaining the
+    0.025 and 0.975 quantiles of the simulated (co)variance components.
+
+We have written code below in a function to perform these steps for each
+of the candidate designs. We also have a figure that plots the simulated
+dataset results (with corresponding confidence intervals) along with the
+exemplary dataset results.
+
+::: {.callout-warning collapse="false"}
+This simulation can take some time with the full 10000 simulations.
+:::
+
+```{r}
+powerSimulations <- function(model, nsims = 10000, seed = 42){
+ sims <- simulate(model, nsims, seed)
+ dataset <- cbind(model$frame, sims)
+ res <- sapply(colnames(sims), function(y){
+  form <-  gsub("mu", y, model$call$formula)
+  newData <- dataset[, gsub("mu", y, colnames(model$frame))]
+  modelNew <- update(model, formula = formula(paste(form[c(2, 1, 3)], collapse = " ")),
+                     start = NULL, map = NULL, data = newData)
+  modelNew$call$data <- as.name(model$call$data)
+  precision <- step3(modelNew)
+  power <- precision$p.value <= 0.05
+  covComp <- data.frame(VarCorr(modelNew)$cond[[1]],
+                        sigma(modelNew) ^ 2)
+  names(power) <- precision$label
+  return(list(precision = precision, power = power, covComp = covComp))
+ })
+ precision <- as.data.frame(do.call("rbind", res[1, ]))
+ meanPrecision <- tapply(precision$estimate, precision$label, mean)
+ SE <- tapply(precision$estimate, precision$label, sd)
+ Lower <- meanPrecision - 1.96 * SE
+ Upper <- meanPrecision + 1.96 * SE
+ precision <- data.frame(mean = meanPrecision, SE = SE, LowerCL = Lower, UpperCL = Upper, Design = toupper(model$call$data),
+                         label = names(SE), row.names = NULL)
+ power <- as.data.frame(do.call("rbind", res[2, ]))
+ power <- sapply(power, mean)
+ CL <- do.call("rbind", lapply(power, function(x){x + c(-1, 1) * 1.96 * sqrt((x * (1 - x)) / nsims)}))
+ power <- data.frame(power = power, LowerCL = CL[, 1], UpperCL = CL[, 2], Design = toupper(model$call$data),
+                     label = names(power), row.names = NULL)
+ covComps <- as.data.frame(do.call("rbind", res[3, ]))
+ covs <- sapply(covComps, mean)
+ CL <- do.call("rbind", lapply(covComps, function(x){
+   quantile(x, probs = c(0.025, 0.975))
+   }))
+ # SattSE <- sapply(covComps, sd)
+ covComps <- data.frame(Parms = covs, LowerCL = CL[, 1], UpperCL = CL[, 2],
+                        # SattSE = SattSE,
+                        Design = toupper(model$call$data),
+                        label = c("Block", "Residual"),
+                        row.names = NULL)
+ return(list(precision = precision, power = power, covComps = covComps))
+}
+
+nSimulations <- 10000
+if(file.exists(paste0("simulations", nSimulations, ".rds"))){
+  res <- readRDS(paste0("simulations", nSimulations, ".rds"))
+}else{
+  res <- sapply(list(bibMod, cvtMod, dnfMod, rcbMod), function(x){
+    powerSimulations(x, nSimulations)
+  })
+  saveRDS(res, file = paste0("simulations", nSimulations, ".rds"))
+}
+```
+
+#### Precision
+
+The standard errors for the exemplary dataset results come from @tbl-10 and are presented below
+on the left in @tbl-12. The simulated results are presented on the right
+in @tbl-12. All data are presented as estimates $\pm$ standard errors.
+
+```{r}
+#| echo: false
+#| label: tbl-12
+#| tbl-cap: "*Exemplary and Simulated Precision Analyses for Competing Designs Using glmmTMB + emmeans*"
+
+simulatedPrecision <- do.call("rbind", res[1, ])
+simulatedPrecision <- simulatedPrecision[!is.na(simulatedPrecision$SE), ]
+
+simulatedPrecisionWide <- reshape(simulatedPrecision[, c("label", "mean", "SE", "Design")], direction = "wide", idvar = "label", timevar = "Design")
+colnames(simulatedPrecisionWide)[grepl("mean|SE", colnames(simulatedPrecisionWide))] <- paste("Simulated", colnames(simulatedPrecisionWide)[grepl("mean|SE", colnames(simulatedPrecisionWide))], sep = ".")
+
+simulatedPrecisionWide[, paste0("Simulated.mean.", c("BIB", "CVT", "DNF", "RCB"))] <- lapply(list("BIB", "CVT", "DNF", "RCB"), function(x){
+  paste0(round(simulatedPrecisionWide[, paste0("Simulated.mean.", x)], 4),
+         " ± ", paste(round(simulatedPrecisionWide[, paste0("Simulated.SE.", x)], 4))
+         )
+})
+
+precisionWide <- reshape(precision[, c("label", "estimate", "SE", "Design")], direction = "wide", idvar = "label", timevar = "Design")
+colnames(precisionWide)[grepl("estimate|SE", colnames(precisionWide))] <- paste("Exemplary", colnames(precisionWide)[grepl("estimate|SE", colnames(precisionWide))], sep = ".")
+
+precisionWide[, paste0("Exemplary.estimate.", c("BIB", "CVT", "DNF", "RCB"))] <- lapply(list("BIB", "CVT", "DNF", "RCB"), function(x){
+  paste0(round(precisionWide[, paste0("Exemplary.estimate.", x)], 4),
+         " ± ", paste(round(precisionWide[, paste0("Exemplary.SE.", x)], 4))
+         )
+})
+
+resWide <- merge(precisionWide, simulatedPrecisionWide, by = "label")
+
+resWide <- resWide[, colnames(resWide)[!grepl("SE|CL", colnames(resWide))]]
+
+table12 <- gt(resWide) %>%
+  # tab_header(
+  #   title = md("Table 12: *Exemplary and Simulated Precision Analyses for Competing Designs Using glmmTMB + emmeans*")
+  # ) %>%
+  cols_label(
+    Exemplary.estimate.BIB = "BIB",
+    Exemplary.estimate.CVT = "CVT",
+    Exemplary.estimate.DNF = "DNF",
+    Exemplary.estimate.RCB = "RCB",
+    Simulated.mean.BIB = "BIB",
+    Simulated.mean.CVT = "CVT",
+    Simulated.mean.DNF = "DNF",
+    Simulated.mean.RCB = "RCB"
+  ) %>%
+  tab_spanner(
+    label = md("**Exemplary**"),
+    columns = colnames(resWide)[startsWith(colnames(resWide), "Exemplary")]
+  ) %>%
+  tab_spanner(
+    label = md("**Simulated**"),
+    columns = colnames(resWide)[startsWith(colnames(resWide), "Simulated")]
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  ) %>%
+  fmt_number(
+    columns = colnames(resWide)[colnames(resWide) != "label"],
+    decimals = 4
+  )
+
+if(knitr::is_html_output()){
+  table12
+}else{
+  table12 %>% as_raw_html()
+}
+```
+
+There are several instances where the simulated standard errors are smaller than the exemplary dataset standard errors. This is contradictory to what one would expect. For the RCB design: the $A$ x $B$ interaction, the $A\mid B$ simple effect, the control vs trt 2 contrast, and the control vs trt 3 contrast are instances of this. For the DNF design: the main effect of $B$ and the trt 1 vs trt 2 contrast are instances of this.
+
+Further, to incorporate the estimates in addition to the standard errors into the calculations, one can look at the coefficients of variation for the exemplary dataset and simulated datasets designs. There are several instances where the simulated coefficients of variation are smaller than the exemplary dataset coefficients of variation. For the RCB design: the $A$ x $B$ interaction and the control vs trt 2 contrast are, again, instances of this. For the DNF design: the main effects of $A$ and $B$, the trt 1 vs trt 2 contrast, and the trt 1 vs trt 3 contrast are instances of this.
+
+@fig-2 shows the estimates from the simulated results with their corresponding standard errors and the exemplary estimates, which are treated as the ground truth, are plotted in addition to the simulated results.
+
+```{r}
+#| echo: false
+#| out.height: "100%"
+#| out.width: "100%"
+#| label: fig-2
+#| fig-cap: "*Exemplary and Simulated Precision Analyses for Competing Designs Using glmmTMB + emmeans*"
+#| fig-cap-location: top
+
+ggplot() +
+  geom_point(aes(x = simulatedPrecision$label, y = simulatedPrecision$mean, color = simulatedPrecision$Design),
+             position = position_dodge(0.9)) +
+  geom_errorbar(aes(x = simulatedPrecision$label, color = simulatedPrecision$Design,
+                    ymin = simulatedPrecision$mean - simulatedPrecision$SE, ymax = simulatedPrecision$mean + simulatedPrecision$SE),
+                position = position_dodge(0.9)) +
+  geom_point(aes(x = precision$label, y = precision$estimate, color = precision$Design, shape = precision$Design), position = position_dodge(0.9)) +
+  xlab("label") +
+  ylab("Estimate ± SE") +
+  scale_color_manual(name = "Simulated Dataset",
+                     values = c("BIB" = "#000000", "CVT" = "#E69F00", "DNF" = "#56B4E9", "RCB" = "#009E73"),
+                     guide = guide_legend(override.aes = list(shape = 16))) +
+  scale_shape_manual(name = "Exemplary Dataset",
+                     values = c("BIB" = 0, "CVT" = 0, "DNF" = 0, "RCB" = 0),
+                     guide = guide_legend(override.aes = list(color = c("#000000", "#E69F00", "#56B4E9",
+                                                                        "#009E73")))) +
+  theme(axis.text.x = element_text(angle = 90),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))
+```
+
+```{r}
+#| echo: false
+#| eval: false
+
+colnames(precision)[colnames(precision) %in% c("estimate", "SE")] <-
+  paste0("Exemplary.", colnames(precision)[colnames(precision) %in% c("estimate", "SE")])
+colnames(simulatedPrecision)[colnames(simulatedPrecision) %in% c("mean", "SE")] <-
+  paste0("Simulated.", colnames(simulatedPrecision)[colnames(simulatedPrecision) %in% c("mean", "SE")])
+precisionRes <- merge(precision, simulatedPrecision, by = c("Design", "label"))
+
+precisionRes$Exemplary.CV <- precisionRes$Exemplary.SE / abs(precisionRes$Exemplary.estimate)
+precisionRes$Simulated.CV <- precisionRes$Simulated.SE / abs(precisionRes$Simulated.mean)
+precisionRes$Diff.CV <- 100 * ((abs(precisionRes$Exemplary.CV - precisionRes$Simulated.CV)) / precisionRes$Exemplary.CV)
+
+precisionRes <- precisionRes[, c("Design", "label", "Exemplary.estimate", "Exemplary.SE", "Simulated.mean", "Simulated.SE", "Exemplary.CV", "Simulated.CV", "Diff.CV")]
+precisionRes$Larger <- precisionRes$Exemplary.CV > precisionRes$Simulated.CV
+
+gt(precisionRes[, c("Design", "label", "Exemplary.CV", "Simulated.CV", "Diff.CV", "Larger")][precisionRes$Larger & round(precisionRes$Diff.CV) != 100, ])
+```
+
+```{r}
+#| echo: false
+#| out.height: "100%"
+#| out.width: "100%"
+
+# ggplot() +
+#   #geom_point(aes(x = simulatedPrecision$label, y = 0, color = simulatedPrecision$Design),
+#   #           position = position_dodge(0.7)
+#   #           ) +
+#   geom_errorbar(aes(x = simulatedPrecision$label, color = simulatedPrecision$Design,
+#                     ymin = -simulatedPrecision$SE, ymax = simulatedPrecision$SE,
+#                     width = 0.1),
+#                 position = position_dodge(0.7)
+#                 ) +
+#   #geom_point(aes(x = precision$label, y = 0, color = precision$Design, shape = precision$Design), position = position_dodge(1)) +
+#     geom_errorbar(aes(x = precision$label, color = precision$Design,
+#                       ymin = -precision$SE, ymax = precision$SE,
+#                       width = 0.1, linetype = rep(c("BIB", "CVT", "DNF", "RCB"), each = 12)),
+#                   position = position_dodge(1)) +
+#   xlab("label") +
+#   ylab("Estimate ± SE") +
+#   scale_color_manual(name = "Simulated Dataset",
+#                      values = c("BIB" = "#000000", "CVT" = "#E69F00", "DNF" = "#56B4E9", "RCB" = "#009E73"),
+#                      guide = guide_legend(override.aes = list(shape = 16))) +
+#   scale_linetype_manual(name = "Exemplary Dataset",
+#                      values = c("BIB" = "dashed", "CVT" = "dashed", "DNF" = "dashed", "RCB" = "dashed"),
+#                      guide = guide_legend(override.aes = list(color = c("#000000", "#E69F00", "#56B4E9",
+#                                                                         "#009E73")))) +
+#   theme(axis.text.x = element_text(angle = 90),
+#         legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))
+```
+
+```{=html}
+<!--
+##### If keeping plot, need to discuss coverage when/if using full 10000 simulations.
+-->
+```
+
+With an appropriate number of simulations completed, one will reach the
+same conclusions about which designs to choose based on the main
+comparisons of interest as in the exemplary dataset scenario.
+
+#### Power
+
+Below, the exemplary (left) and simulated (right) power analysis results
+are graphically represented for `glmmTMB` for each of the original
+contrasts of interest in @tbl-13. For the simulated results, data is
+represented as the power $\pm$ margin of error. The exemplary data
+approach does not yield any variability estimates.
+
+```{r}
+#| echo: false
+#| label: tbl-13
+#| tbl-cap: "*Simulated Power Analyses for Competing Designs Using glmmTMB + emmeans*"
+
+simulatedPower <- do.call("rbind", res[2, ])
+
+simulatedPowerWide <- reshape(simulatedPower[, c("label", "power", "LowerCL", "UpperCL", "Design")], direction = "wide",
+        idvar = "label", timevar = "Design")
+colnames(simulatedPowerWide)[colnames(simulatedPowerWide) != "label"] <- paste("Simulated", colnames(simulatedPowerWide)[colnames(simulatedPowerWide) != "label"], sep = ".")
+
+powerWide <- reshape(exemplaryPower[, c("label", "power", "Design")], direction = "wide",
+        idvar = "label", timevar = "Design")
+colnames(powerWide)[colnames(powerWide) != "label"] <- paste("Exemplary", colnames(powerWide)[colnames(powerWide) != "label"], sep = ".")
+resWide2 <- merge(powerWide, simulatedPowerWide, by = "label")
+
+resWide2[, paste0("Simulated.power.", c("BIB", "CVT", "DNF", "RCB"))] <- lapply(list("BIB", "CVT", "DNF", "RCB"), function(x){
+  paste0(round(resWide2[, paste0("Simulated.power.", x)], 4),
+         " (", paste(round(resWide2[, paste0("Simulated.LowerCL.", x)], 4),
+                     round(resWide2[, paste0("Simulated.UpperCL.", x)], 4), 
+                     sep = ", "), 
+         ")")
+})
+resWide2 <- resWide2[, colnames(resWide2)[!grepl("Lower|Upper", colnames(resWide2))]]
+
+table13 <- gt(resWide2) %>%
+  # tab_header(
+  #   title = md("Table 13: *Simulated Power Analyses for Competing Designs Using glmmTMB + emmeans*")
+  # ) %>%
+  cols_label(
+    Exemplary.power.BIB = "BIB",
+    Exemplary.power.CVT = "CVT",
+    Exemplary.power.DNF = "DNF",
+    Exemplary.power.RCB = "RCB",
+    Simulated.power.BIB = "BIB (95% CI)",
+    Simulated.power.CVT = "CVT (95% CI)",
+    Simulated.power.DNF = "DNF (95% CI)",
+    Simulated.power.RCB = "RCB (95% CI)"
+  ) %>%
+  tab_spanner(
+    label = md("**Exemplary Power**"),
+    columns = colnames(resWide2)[startsWith(colnames(resWide2), "Exemplary")]
+  ) %>%
+  tab_spanner(
+    label = md("**Simulated Power**"),
+    columns = colnames(resWide2)[startsWith(colnames(resWide2), "Simulated")]
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  ) %>%
+  fmt_number(
+    columns = colnames(resWide2)[startsWith(colnames(resWide2), "Exemplary")],
+    decimals = 4
+  )
+
+if(knitr::is_html_output()){
+  table13
+}else{
+  table13 %>% as_raw_html()
+}
+```
+
+[@fig-3] shows the results of the power analysis completed using
+`glmmTMB` + `emmeans` graphically.
+
+```{r}
+#| echo: false
+#| out.height: "100%"
+#| out.width: "100%"
+#| fig.height: 15
+#| label: fig-3
+#| fig-cap: "*Simulated Power Analyses for Competing Designs Using glmmTMB + emmeans*"
+#| fig-cap-location: top
+
+ggplot() +
+  geom_point(aes(x = simulatedPower$label, y = simulatedPower$power, color = simulatedPower$Design),
+             position = position_dodge(0.9)) +
+  geom_errorbar(aes(x = simulatedPower$label, color = simulatedPower$Design,
+                    ymin = simulatedPower$LowerCL, ymax = simulatedPower$UpperCL),
+                position = position_dodge(0.9)) +
+  geom_point(aes(x = exemplaryPower$label, y = exemplaryPower$power, color = exemplaryPower$Design, shape = exemplaryPower$Design), position = position_dodge(0.9)) +
+  xlab("label") +
+  ylab("Power ± MoE") +
+  scale_color_manual(name = "Simulated Dataset",
+                     values = c("BIB" = "#000000", "CVT" = "#E69F00", "DNF" = "#56B4E9", "RCB" = "#009E73"),
+                     guide = guide_legend(override.aes = list(shape = 16))) +
+  scale_shape_manual(name = "Exemplary Dataset",
+                     values = c("BIB" = 0, "CVT" = 0, "DNF" = 0, "RCB" = 0),
+                     guide = guide_legend(override.aes = list(color = c("#000000", "#E69F00", "#56B4E9",
+                                                                        "#009E73")))) +
+  theme(axis.text.x = element_text(angle = 90),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))
+```
+
+```{=html}
+<!--
+1-A Main Effect: DNF, RCB
+2-B Main Effect: none
+3-A x B interaction: RCB
+4-A|B simple effect: BIB
+5-B|A simple effect: none
+a: DNF, RCB
+b: none
+a:b: RCB
+control vs at least one trt: DNF, RCB
+control vs trt 1: none
+control vs trt 2: none
+control vs trt 3: BIB
+control vs trt 4: DNF
+control vs trt 5: none
+trt 1 vs trt 2: none
+trt 1 vs trt 3: none
+-->
+```
+
+It is worth noting that there are several instances where the exemplary
+dataset power is not contained in the confidence interval for the
+simulated power results for the RCB design: the main effect of $a$, the
+interaction effect of $a$ x $b$, and the control vs at least one trt
+contrast. The exemplary power for all instances errs more conservatively
+than the simulated power. The block variance component of
+$\sigma_f^2 = 0.23$ is much closer to the boundary of the parameter
+space of zero than $\sigma_r^2 = 0.5$, so it is suspected that there
+were more instances where a singular fit occurred such that the block
+variance and residual variance were pooled. This would inflate power but
+also Type I error. See Example 1 for more details on this. @tbl-14 shows
+that several instances of singular fits occurred.
+
+There are also several instances where the exemplary dataset results are
+not contained by the confidence intervals from the simulation for the
+DNF design: the main effect of $a$, the control vs at least one trt
+contrast, and the control vs trt 4 contrast. This design is less prone
+to suffer from the hitting the boundary of the parameter space for the
+block variance component than the RCB, but it illustrates the problem of
+taking the RCB and redefining the forced blocks to respect the natural
+block size of three.
+
+Recall that the CVT design was chosen for control vs treatment contrasts
+based on the standard errors in the initial precision analysis.
+Logically, one would also assume that the CVT design would perform the
+best in the power analysis for the control vs at least one treatment
+contrast, but it performed quite poorly. It illustrates that
+omnibus-like results like this can produce quite different - and
+sometimes contradictory - results than more focused comparisons.
+
+Also worth noting is that is if the true difference between linear
+combinations of means is zero, then the alternative distribution is the
+null distribution and the power corresponds to the Type I error rate
+chosen. This is illustrated in the control vs treatment 3, control vs
+treatment 4, and control vs treatment 5 contrasts.
+
+#### (Co)variance Components
+
+@tbl-14 shows the exemplary covariance components on the left and the results of the Monte Carlo simulation using these parameters on the right. 
+
+```{=html}
+<!--
+##### The simulation confidence intervals seem quite wide (even when 1000s of simulations)! Just stick with Satterthwaite?
+
+We'll outline the steps to calculate the Satterthwaite approximation
+confidence interval for comparison with the simulation. First, calculate
+the $S.E.(\sigma_i^2)$ for the $i^{th}$ (co)variance component from the
+simulation. Next, calculate the degrees of freedom as
+$\nu = 2[\frac{\sigma_i^2}{S.E.(\sigma_i^2)}]^2$. Obtain the $\chi^2$
+critical values ($\chi_{\nu,0.975}^2$ and $\chi_{\nu,0.025}^2$).
+Finally, construct the confidence interval as
+$\frac{\nu\sigma_i^2}{\chi_{\nu,0.975}^2}\leq\sigma_i^2\leq\frac{\nu\sigma_i^2}{\chi_{\nu,0.025}^2}$.
+See
+[here](https://documentation.sas.com/doc/en/statug/latest/statug_mixed_syntax01.htm#statug.mixed.procstmt_cl).
+-->
+```
+
+```{r}
+#| echo: false
+#| label: tbl-14
+#| tbl-cap: "*Simulated Covariance Components for Competing Designs Using glmmTMB*"
+
+simulatedCovComps <- do.call("rbind", res[3, ])
+exemCovComps <- data.frame(Design = rep(c("BIB", "CVT", "DNF", "RCB"), each = 2),
+                           label = rep(c("Block", "Residual"), 4),
+                           Exemplary.Parms = c(rep(c(0.5, 1), 3), 0.23, 1.26))
+covComps <- merge(exemCovComps, simulatedCovComps, by = c("Design", "label"))
+# simulatedCovComps$nu <- 2 * (simulatedCovComps$Parms / simulatedCovComps$SattSE) ^ 2
+# simulatedCovComps$SattLower <- (simulatedCovComps$nu * simulatedCovComps$Parms) / qchisq(0.975, simulatedCovComps$nu)
+# simulatedCovComps$SattUpper <- (simulatedCovComps$nu * simulatedCovComps$Parms) / qchisq(0.025, simulatedCovComps$nu)
+
+table14 <- gt(covComps) %>%
+  # tab_header(
+  #   title = md("Table 14: *Simulated Covariance Components for Competing Designs Using glmmTMB*")
+  # ) %>%
+  cols_label(
+    Exemplary.Parms = "Parameter",
+    Parms = "Parameter",
+    LowerCL = "Lower Limit (95% CI)",
+    UpperCL = "Upper Limit (95% CI)"
+  ) %>%
+  tab_spanner(
+    label = md("**Exemplary**"),
+    columns = colnames(covComps)[startsWith(colnames(covComps), "Exemplary")]
+  ) %>%
+  tab_spanner(
+    label = md("**Simulated**"),
+    columns = colnames(covComps)[which(colnames(covComps) == "Parms"):length(colnames(covComps))]
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  ) %>%
+  fmt_number(
+    columns = colnames(covComps)[which(colnames(covComps) == "Exemplary.Parms"):length(colnames(covComps))],
+    decimals = 4
+  )
+
+if(knitr::is_html_output()){
+  table14
+}else{
+  table14 %>% as_raw_html()
+}
+```
+
+We can see that at least $2.5\%$ of our simulations resulted in singular
+fits for the block variance component for all designs.
+
+```{r}
+#| echo: false
+#| out.width: "100%"
+
+# ggplot() +
+#   geom_point(aes(x = simulatedCovComps$label, y = simulatedCovComps$Parms, color = simulatedCovComps$Design), 
+#              position = position_dodge(0.5)) +
+#   # geom_errorbar(aes(x = simulatedCovComps$label, color = simulatedCovComps$Design,
+#   #                   ymin = simulatedCovComps$LowerCL, ymax = simulatedCovComps$UpperCL, 
+#   #                   width = 0.5),
+#   #               linetype = 2,
+#   #               position = position_dodge(0.5)) +
+#   geom_errorbar(aes(x = simulatedCovComps$label, color = simulatedCovComps$Design,
+#                     ymin = simulatedCovComps$LowerCL, ymax = simulatedCovComps$UpperCL,
+#                     width = 0.5),
+#                 position = position_dodge(0.5)) +
+#   geom_point(aes(x = exemCovComps$label, y = exemCovComps$Parms, color = exemCovComps$Design, shape = exemCovComps$Design), position = position_dodge(0.5)) +
+#   xlab("label") +
+#   ylab("(Co)variance ± MoE") +
+#   scale_color_manual(name = "Simulated Dataset", 
+#                      values = c("BIB" = "#000000", "CVT" = "#E69F00", "DNF" = "#56B4E9", "RCB" = "#009E73"),
+#                      guide = guide_legend(override.aes = list(shape = 16))) +
+#   scale_shape_manual(name = "Exemplary Dataset",
+#                      values = c("BIB" = 0, "CVT" = 0, "DNF" = 0, "RCB" = 0),
+#                      guide = guide_legend(override.aes = list(color = c("#000000", "#E69F00", "#56B4E9",
+#                                                                         "#009E73"))))
+```
+
+##### Need to discuss coverage when/if using full 10000 simulations.
+
+### Why not use `lme4` @lme4 or `nlme` @nlme for this purpose? {#why-not-use-lme4-or-nlme-for-this-purpose}
+
+To our knowledge, there is there no known way to natively fix both the
+random effects variances on the $\mathbf{G}$-side AND the residual
+variance on the $\mathbf{R}$-side in `nlme` (`lme()`).
+[Here](https://stackoverflow.com/questions/39718754/fixing-variance-values-in-lme4)
+and
+[here](https://stackoverflow.com/questions/63145801/fix-variances-to-specific-values-in-lme4-lmer)
+are two attempts to fix variance components using the `lme4` package.
+
+#### `simr`
+
+Despite this limitation, the `simr` package allows the user to create
+`lmer` model objects with the `makeLmer()` function. `glmer` objects are
+also available with the `makeGlmer()` function. This utilizes the same
+four-step procedure outlined for `PROC GLIMMIX` and `glmmTMB` +
+`emmeans`. The same exemplary datasets that were created in step 1 for
+`glmmTMB` will be used here.
+
+```{r}
+library(simr)
+coefs <- unname(fixef(bibMod)$cond)
+
+contrasts(bib$a) <- contrasts(bib$b) <- contrasts(cvt$a) <- contrasts(cvt$b) <- contrasts(dnf$a) <- contrasts(dnf$b) <- contrasts(rcb$a) <- contrasts(rcb$b) <- contr.SAS
+```
+
+##### BIB
+
+The residual standard deviation ($\sqrt{\sigma_e^2}$) is specified for
+`sigma`, and the block variance is specified for `VarCorr`. An
+interesting quirk is that the `fixef` argument is required even though
+the exemplary dataset should provide all the needed information to
+calculate the fixed effects. Perhaps this argument would be more useful
+for examples using a real dataset or for different effect sizes not
+calculated by the dataset provided.
+
+```{r}
+bibMod <- makeLmer(mu ~ a * b + (1 | block), data = bib,
+                   fixef = coefs, 
+                   VarCorr = 0.5, sigma = sqrt(1))
+```
+
+With the fitted model object, the precision analysis can be performed:
+
+```{r}
+bibsimr <- step3(bibMod)
+```
+
+##### CVT
+
+Note that `update()` cannot be used to fit subsequent models like with
+`glmmTMB`.
+
+```{r}
+cvtMod <- makeLmer(mu ~ a * b + (1 | block), data = cvt,
+                   fixef = coefs,
+                   VarCorr = 0.5, sigma = sqrt(1))
+cvtsimr <- step3(cvtMod)
+```
+
+##### DNF
+
+```{r}
+dnfMod <- makeLmer(mu ~ a * b + (1 | block), data = dnf,
+                   fixef = coefs,
+                   VarCorr = 0.5, sigma = sqrt(1))
+dnfsimr <- step3(dnfMod)
+```
+
+##### RCB
+
+```{r}
+rcbMod <- makeLmer(mu ~ a * b + (1 | c_block), data = rcb,
+                   fixef = coefs,
+                   VarCorr = 0.23, sigma = sqrt(1.26))
+rcbsimr <- step3(rcbMod)
+```
+
+##### Precision
+
+Compare this with `PROC GLIMMIX` and `glmmTMB + emmeans` in @tbl-10.
+
+```{r}
+#| echo: false
+#| label: tbl-15
+#| tbl-cap: "*Standard Errors from Precision Analyses for Competing Designs Using simr*"
+
+res <- rbind(bibsimr, cvtsimr, dnfsimr, rcbsimr)
+precision <- res[!is.na(res$t.ratio), ]
+reshapedPrecision <- reshape(precision[, c("label", "SE", "Design")], 
+                             direction = "wide",
+                             idvar = "label", timevar = "Design")
+
+table15 <- gt(reshapedPrecision) %>%
+  # tab_header(
+  #   title = md("Table 15: *Standard Errors from Precision Analyses for Competing Designs Using simr*")
+  # ) %>%
+  cols_label(
+    label = md("**label**"), 
+    SE.BIB = md("**BIB**"), 
+    SE.CVT = md("**CVT**"),
+    SE.DNF = md("**DNF**"),
+    SE.RCB = md("**RCB**")
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  ) %>%
+  fmt_number(
+    columns = colnames(reshapedPrecision)[colnames(reshapedPrecision) != "label"],
+    decimals = 4
+  )
+
+if(knitr::is_html_output()){
+  table15
+}else{
+  table15 %>% as_raw_html()
+}
+```
+
+##### Power
+
+Compare this with `PROC GLIMMIX` and `glmmTMB + emmeans` in @tbl-11 and `glmmTMB` + `emmeans` in @tbl-13.
+
+```{r}
+#| echo: false
+#| label: tbl-16
+#| tbl-cap: "*Power Analyses for Competing Designs Using simr*"
+
+power <- res
+power$nc <- power$df1 * power$F.ratio
+power$alpha <- 0.05
+power$F.crit <- qf(1 - power$alpha, power$df1, power$df2)
+power$power <- 1 - pf(power$F.crit, power$df1, power$df2, power$nc)
+reshapedPower <- reshape(power[, c("label", "power", "Design")], 
+                         direction = "wide",
+                         idvar = "label", timevar = "Design")
+
+table16 <- gt(reshapedPower) %>%
+  # tab_header(
+  #   title = md("Table 16: *Power Analyses for Competing Designs Using simr*")
+  # ) %>%
+  cols_label(
+    label = md("**label**"), 
+    power.BIB = md("**BIB**"), 
+    power.CVT = md("**CVT**"),
+    power.DNF = md("**DNF**"),
+    power.RCB = md("**RCB**")
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  ) %>%
+  fmt_number(
+    columns = colnames(reshapedPower)[colnames(reshapedPower) != "label"],
+    decimals = 4
+  )
+
+if(knitr::is_html_output()){
+  table16
+}else{
+  table16 %>% as_raw_html()
+}
+```
+
+#### `nlme` [@nlme]
+
+Having this capability in `nlme` would be more advantageous than
+`lme4`due to the number of covariance structures available and degree of
+freedom specification. However, it looks like `lme4` now has other
+options besides unstructured covariance structures including diagonal,
+compound symmetry, and autoregressive order 1. This could make `simr`
+much more versatile. But, anything done in `nlme` could also be easily
+extended to `glmmPQL`. This would be a boon for `SAS®` users.
+
+The residual variance can be fixed to 1 with the `sigma` argument in
+`lmeControl()` by providing the residual SD of 1. The problem arises
+with fixing random effects variances for `lme()`. This was the attempt
+we made with `pdSymm()` below. Note that `gls` allows values to be fixed
+through its `cor-` classes with the `fixed = TRUE` argument. Perhaps
+someone in the future would be willing to add a `fixed = TRUE` argument
+to `pdClass`es?
+
+Note that since we are not fitting a model to data with variability, we
+may get convergence errors in the following `lme()` function. We can
+ignore this because it is not what `lme()` was built for here (precision
+and power analysis). We are NOT recommending to ignore convergence
+errors in general. The argument `returnObject = TRUE` within
+`lmeControl()` allows us to retrieve an object from this formula, even
+though we would get a convergence error message.
+
+```{r}
+library(nlme)
+
+bibMod <- lme(mu ~ a * b,
+              method = "REML",
+              list(block = pdSymm(matrix(0.5), ~ 1, nam = "(Intercept)")),
+              data = bib,
+              control = lmeControl(sigma = sqrt(1), returnObject = TRUE))
+
+VarCorr(bibMod)
+```
+
+You can see from the above output that our residual variance is fixed to
+its starting value, but the block variance was not.
+
+Below, we've written a crude function to make an attempt with `nlme` for
+our particular use case using the BIB design:
+
+1.  Assign the `pdSymm` object back into the random effects structure.
+
+2.  Construct the block-diagonal marginal variance-covariance matrix
+    $\mathbf{V}$ using `getVarCov(., type = "m")`.
+
+3.  Obtain the Cholesky factor ($\mathbf{R}$) from the decomposition of
+    the inverse of the marginal variance-covariance matrix
+    ($\mathbf{R'R}=\mathbf{V}^{-1}$). Perform a $\mathbf{Q}R$
+    decomposition on the result ($\mathbf{Q}R=\mathbf{RX}$) where
+    $\mathbf{Q}$ is an orthogonal matrix. Take the inverse of $R$ from
+    the $\mathbf{Q}R$ decomposition, transpose it, and replace it in
+    `varFixFact` ($\mathbf{A}=(R^{-1})'$). The cross-product is equal to
+    $Var(\boldsymbol{\hat{\beta}}) = \mathbf{A'A}$.
+
+4.  Replace block variance if using `intervals()` for confidence
+    intervals, log-likelihood if using fit statistics, etc. Note that
+    the number of parameters in `R` is comprised of the fixed effects
+    coefficients and the residual variance whereas the number of
+    parameters in `SAS®` is comprised of the (co)variances. There may be
+    other internal model components that we failed to overwrite in the
+    below function, but this wasn't meant to be a reliable
+    implementation.
+
+```{r}
+fixBlockVar <- function(model, blockVar = 0.5){
+  re <- names(model$groups)
+  # Assign the `pdSymm()` matrix back into the random effects structure
+  model$modelStruct$reStruct[[re]] <- pdSymm(matrix(blockVar), ~ 1, nam = "(Intercept)")
+  # Create the full marginal variance-covariance matrix
+  V <- kronecker(diag(1, length(unique(model$data[, re]))), getVarCov(model, type = "m")[[1]])
+  # Obtain the Cholesky factor (R) from the decomposition of the inverse of the marginal 
+  # variance-covariance matrix (V^{-1}).  Perform a QR decomposition on the result 
+  # of the Cholesky decomposition.
+  # Take the inverse of R from the QR decomposition, transpose it, and replace 
+  # it in `varFixFact`. The cross-product is equal to Var(\beta).
+  X <- model.matrix(model, model$data)
+  attr(model$fixDF, "varFixFact") <- t(solve(qr.R(qr(chol(solve(V)) %*% X))))
+  model$varFix <- crossprod(attr(model$fixDF, "varFixFact"))
+  # Replace block variance if using `intervals()` for confidence intervals.
+  nm <- paste0("reStruct.", re)
+  attr(model$apVar, "Pars") <- c(nm = log(sqrt(blockVar)))
+  # Replace log-likelihood if fit statistics are used. Note that the number of 
+  # parameters in `R` is comprised of the fixed effects coefficients and the 
+  # residual variance whereas the number of parameters in `SAS` is comprised of 
+  # the (co)variances.
+  if(model$method == "REML"){
+   model$logLik <- (-1 / 2) * log(det(V)) - (1 / 2) * log(det(solve(model$varFix))) - (1 / 2) * t(model$data[, all.vars(model$terms)[1]] - X %*% cbind(fixef(model))) %*% solve(V) %*% (model$data[, all.vars(model$terms)[1]] - X %*% cbind(fixef(model))) - ((nrow(model$data) - ncol(X)) / 2) * (log(2 * pi)) 
+  }else{
+    model$logLik <- (-1 / 2) * log(det(V)) - (1 / 2) * t(model$data[, all.vars(model$terms)[1]] - X %*% cbind(fixef(model))) %*% solve(V) %*% (model$data[, all.vars(model$terms)[1]] - X %*% cbind(fixef(model))) - (nrow(model$data) / 2) * (log(2 * pi)) 
+  }
+  model$dims$ncol[2] <- model$dims$ncol[2] - 1 # The residual variance is known
+  return(model)
+}
+
+bibMod <- fixBlockVar(bibMod)
+```
+
+The result:
+
+```{r}
+VarCorr(bibMod)
+```
+
+From here, all subsequent steps are the same as outlined in the
+`glmmTMB` + `emmeans` framework with the exception of the degrees of
+freedom used by `emmeans`. Russ Lenth has [a different
+idea](https://stats.stackexchange.com/questions/140156/degrees-of-freedom-using-containment-method)
+of what containment degrees of freedom should be, so the result may not
+be the same using the default degrees of freedom. We need to access
+`model$fixDF$terms` to match the `SAS®` result:
+
+```{r}
+biblme <- step3(bibMod)
+```
+
+If the statistician is only interested in $F$-statistic contrasts,
+`emmeans` need not be used. The `nlme` package has a function that
+accepts a contrast coefficient matrix (`L`) in the `anova.lme()`
+function:
+
+The CVT design proceeds in the same way as the BIB when we substitute
+the appropriate exemplary dataset.
+
+```{r}
+contrasts(cvt$a) <- contrasts(cvt$b) <- contr.SAS
+cvtMod <- update(bibMod, data = cvt)
+cvtMod <- fixBlockVar(cvtMod)
+cvtlme <- step3(cvtMod)
+```
+
+With the DNF design, we encounter a limitation of how degrees of freedom
+are calculated:
+
+```{r}
+contrasts(dnf$a) <- contrasts(dnf$b) <- contr.SAS
+dnfMod <- update(bibMod, data = dnf)
+dnfMod <- fixBlockVar(dnfMod)
+dnfMod$fixDF$terms
+```
+
+We've obtained 8 degrees of freedom for Factor $A$. This is different
+from what we would expect based on the [ANOVA shell (16 degrees of
+freedom)](#design-3---disconnected-nested-factorial-a.k.a.-split-plot)
+and a potential drawback of `nlme`. Regardless, you may need to specify
+the degrees of freedom in `emmeans` anyway.
+
+```{r}
+dnfMod$fixDF$terms["a"] <- unique(dnfMod$fixDF$terms[names(dnfMod$fixDF$terms) != "a"])
+dnflme <- step3(dnfMod)
+```
+
+Here is the RCB design. When the residual variance isn't fixed to 1, the
+`weights` argument must be used.
+
+The parameterization is different with `nlme` since the residual
+variance is not "known". We go from $$e_{ijk}{~}iid{~}N(0, \sigma_e^2)$$
+in `glmmTMB` to $$e_{ijk}{~}iid{~}N(0, \sigma_e^2v_{ijk})$$
+
+where $v_{ijk}$ represents the "known" variance. By setting
+$\sigma_e^2 = 1$ and $v_{ijk} = 1.26$, we can replicate the `glmmTMB`
+results.
+
+```{r}
+contrasts(rcb$a) <- contrasts(rcb$b) <- contr.SAS
+rcb$cblockVar <- 1.26
+rcbMod <- update(bibMod,
+                 random = list(c_block = pdSymm(matrix(0.23), ~ 1, nam = "(Intercept)")),
+                 data = rcb,
+                 weights = varFixed(~ cblockVar))
+
+rcbMod <- fixBlockVar(rcbMod, 0.23)
+VarCorr(rcbMod)
+```
+
+Note that the residual variance is fixed to 1, but we have
+inverse-variance weighting. Here's how we obtain $v_{ijk}$:
+
+```{r}
+unique(1 / varWeights(rcbMod$modelStruct) ^ 2)
+```
+
+```{r}
+rcblme <- step3(rcbMod)
+```
+
+##### Precision
+
+Compare this with `PROC GLIMMIX` and `glmmTMB + emmeans` in @tbl-10.
+
+```{r}
+#| echo: false
+#| label: tbl-17
+#| tbl-cap: "*Standard Errors from Precision Analyses for Competing Designs Using nlme::lme()*"
+
+res <- rbind(biblme, cvtlme, dnflme, rcblme)
+precision <- res[!is.na(res$t.ratio), ]
+reshapedPrecision <- reshape(precision[, c("label", "SE", "Design")], 
+                             direction = "wide",
+                             idvar = "label", timevar = "Design")
+
+table17 <- gt(reshapedPrecision) %>%
+  # tab_header(
+  #   title = md("Table 17: *Standard Errors from Precision Analyses for Competing Designs Using nlme::lme()*")
+  # ) %>%
+  cols_label(
+    label = md("**label**"), 
+    SE.BIB = md("**BIB**"), 
+    SE.CVT = md("**CVT**"),
+    SE.DNF = md("**DNF**"),
+    SE.RCB = md("**RCB**")
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  ) %>%
+  fmt_number(
+    columns = colnames(reshapedPrecision)[colnames(reshapedPrecision) != "label"],
+    decimals = 4
+  )
+
+if(knitr::is_html_output()){
+  table17
+}else{
+  table17 %>% as_raw_html()
+}
+```
+
+##### Power
+
+Compare this with `PROC GLIMMIX` and `glmmTMB` + `emmeans` in @tbl-11 and `glmmTMB` + `emmeans` in @tbl-13.
+
+```{r}
+#| echo: false
+#| label: tbl-18
+#| tbl-cap: "*Power Analyses for Competing Designs Using nlme::lme()*"
+
+power <- res
+power$nc <- power$df1 * power$F.ratio
+power$alpha <- 0.05
+power$F.crit <- qf(1 - power$alpha, power$df1, power$df2)
+power$power <- 1 - pf(power$F.crit, power$df1, power$df2, power$nc)
+reshapedPower <- reshape(power[, c("label", "power", "Design")], 
+                         direction = "wide",
+                         idvar = "label", timevar = "Design")
+
+table18 <- gt(reshapedPower) %>%
+  # tab_header(
+  #   title = md("Table 18: *Power Analyses for Competing Designs Using nlme::lme()*")
+  # ) %>%
+  cols_label(
+    label = md("**label**"), 
+    power.BIB = md("**BIB**"), 
+    power.CVT = md("**CVT**"),
+    power.DNF = md("**DNF**"),
+    power.RCB = md("**RCB**")
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  ) %>%
+  fmt_number(
+    columns = colnames(reshapedPower)[colnames(reshapedPower) != "label"],
+    decimals = 4
+  )
+
+if(knitr::is_html_output()){
+  table18
+}else{
+  table18 %>% as_raw_html()
+}
+```
+
+### How to deal with the degrees of freedom issue?
+
+[This](https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#why-doesnt-lme4-display-denominator-degrees-of-freedomp-values-what-other-options-do-i-have)
+gives a comprehensive overview. We should start by constructing an ANOVA
+shell if possible. We have a simple implementation of containment
+degrees of freedom above for these particular designs and models, but a
+native implementation for `glmmTMB` has yet to be carried out. The `R`
+package `emmeans` can be used, but its calculations may not match
+`SAS®`.
+
+However, `glmmTMB` 1.1.13 has [implemented the Satterthwaite and
+Kenward-Roger degrees of freedom and standard error
+adjustments](https://github.com/glmmTMB/glmmTMB/pull/1153/) for (G)LMMs
+through `summary(., ddf = "satterthwaite")` and
+`summary(., ddf = "kenward-roger")`, respectively. We are still waiting
+on `emmeans` support with these degrees of freedom methods. According to
+@stroup2016 and Stroup et al. [-@stroup2024a; -@stroup2024b], neither approximation is
+appropriate for GLMMs using Laplace or quadrature approximation. Both
+are apparently allowed for use with `glmmTMB` while fixing the
+(co)variance components (ignoring the GLMM case here), but it is likely
+not appropriate. One cannot obtain the Hessian or the asymptotic
+variance-covariance matrix from the `glmmTMB` object to see what may be
+happening.
+
+### This is a project that focuses on generalized linear mixed models. Are there any plans for response distributions that aren't Gaussian?
+
+We are currently working on an example that uses a binomial response
+(Example 15). From what we have completed so far, we have no reason to
+believe that this approach would not work for other response
+distributions.
+
+## Findings and Considerations
+
+Below is a table summarizing our findings when considering software
+packages in terms of handling different covariance structures,
+distributions, df adjustments, and contrasts:
+
+```{r}
+#| echo: false
+#| label: tbl-19
+#| tbl-cap: "*Findings for SAS® and R Software*"
+
+findings <- data.frame(
+  col1 = c("\U2713", "\U2713", "\U2713", "\U2713", "\U2713", "\U2713", "\U2713", "\U2717"),
+  col2 = c("\U2713", "\U2713", "\U2713", "G-side: \U2713<br/>R-side: Using dispformula", "Yes, but only appropriate for LMMs", "\U2717", "Through emmeans package or other", "\U2713"),
+  col3 = c("\U2713", "\U2713", "\U2717", "G-side: \U2713<br/>R-side: \U2717", "Yes, but only appropriate for LMMs", "\U2717", "Through emmeans package or other", "\U2713"),
+  col4 = c("lme(): Residual variance only<br/>gls(): All components", "Only through the MASS package", "\U2713", "\U2713", "No, Satterthwaite only", "\U2713", "Through emmeans package or anova.lme()", "\U2713")
+)
+rownames(findings) <- c("Fixing (Co)variance Components", "Non-Gaussian Responses", "Multiple Covariance Structures", "G and R-side", "Kenward-Roger Approximation", "Containment Degrees of Freedom", "Contrasts", "Simulate from 'Fitted' Model")
+
+table19 <- gt(findings, rownames_to_stub = TRUE) %>%
+  # tab_header(
+  #   title = md("Table 19: *Findings for SAS® and R Software*")
+  # ) %>%
+  cols_label(
+    col1 = md("**PROC GLIMMIX**"),
+    col2 = md("**glmmTMB**"),
+    col3 = md("**simr (lme4)**"),
+    col4 = md("**nlme**")
+  ) %>%
+  tab_spanner(
+    label = md("**SAS®**"), columns = 1:2
+  ) %>%
+  tab_spanner(
+    label = md("**R**"), columns = 3:5
+  ) %>%
+  tab_options(
+    table.font.names = "Arial"
+  ) %>%
+  tab_style(
+    style = cell_text(font = "Arial", size = "12pt"),
+    locations = list(
+      cells_title(groups = "title"),
+      cells_body(),
+      cells_column_labels(),
+      cells_column_spanners(),
+      cells_footnotes(),
+      cells_stub()
+    )
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_column_labels(
+      columns = everything()
+    )
+  )
+
+if(knitr::is_html_output()){
+  table19
+}else{
+  table19 %>% as_raw_html()
+}
+```
+
+- When using GLMM-based power analyses to compare competing designs
+  (i.e. balanced incomplete block design, control vs treatments,
+  split-plot arrangement and “forced” randomized complete blocks),
+  identical results on standard errors for contrasts of interest (up to
+  round-off error) can be obtained using the following software
+  implementations:
+  - `SAS®` `PROC GLIMMIX`,\
+  - `R` functions `glmmTMB::glmmTMB()`, `emmeans::emmeans()`,
+    `emmeans::contrast()`\
+  - `R` function `simr::makeLmer()`, `emmeans::emmeans()`,
+    `emmeans::contrast()`\
+  - `R` function `nlme::lme()`, `emmeans::emmeans()`,
+    `emmeans::contrast()`\
+    provided that:\
+  - Variance components are properly fixed at selected values.
+    - For all variance components in a specified model, this is
+      straightforward to do from using `SAS®` `PROC GLIMMIX`, `R`
+      `glmmTMB::glmmTMB()`, `simr::makeLmer()`\
+    - With `R` `nlme::lme()`, it is straightforward to fix the residual
+      variance from within the function. However, fixing variance
+      components for random effects requires a few additional steps to
+      go back into the “fitted” model” object, assign the selected value
+      and overwrite internal function attributes.\
+  - Parameterization of variance components is carefully aligned between
+    software platforms.
+    - `SAS®` works mostly with variance parameters\
+    - `R` packages seem to work by specifying square root of variance
+      components.\
+    - Note discrepancies in parameterization of variance components
+      dependent on version of `glmmTMB`\
+  - Parameterization of fixed effects is carefully aligned between
+    software platforms, to facilitate specification of contrast
+    coefficients that reflect the same specific questions of interest
+    (i.e. main effects, interactions, simple effects, selected pairwise
+    comparisons, etc.)
+    - Set to zero parameterization: First vs last level of a factor
+      zeroed out.
+      - Need to use `contr.SAS` in `R`
+    - Ordering of groups when dealing with multiple factorials.
+- Provided all of the above, identical power calculations for power
+  analyses that compare competing designs on contrasts of interest can
+  be obtained using both `SAS®` and `R`, round-off errors
+  notwithstanding.
+
+{{< pagebreak >}}
+
+## TODO
+
+- Make sure all tables use the `gt` package and are consistent
+- Flesh out all sections with more explanations
+  - Add more mathematical details to `nlme` section
+- Clean up code - namely the residual variance version code (or remove)
+  and the R simulation code
+- Test any existing SAS code
+  - Additionally, the final product may need SAS and R results to be
+    together in one table or figure, so write some code to export from
+    SAS to a spreadsheet in read in to use with `gt` table package
+- Meet with Reka about RCB covariance parameters calculation
+  discrepancies - if not resolved, scrap this section
+  - Additionally, resolve the discrepancies in subscripts that I
+    introduced
+  - Check to see how many of her comments I haven't yet addressed
+- Finish SAS code for simulation - maybe ask Bruce for code he wrote if
+  he still has it
+- Implement Kenward-Roger adjustments into simulation results for both
+  SAS and R if requested
+  - In R, use emmeans(., vcov = attr(dof_KR(.), "vcov")) as native
+    emmeans support is not available yet
+- Double-check references
+- Address any pesky warnings or other messages in R code
+- Have someone else with access to desktop SAS recompile the final QMD
+  file
+
+{{< pagebreak >}}
+
+## References
+
+::: {#refs}
+:::
+
+## Session Info
+
+```{r}
+sessionInfo()
+```
