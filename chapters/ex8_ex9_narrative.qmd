@@ -1,22 +1,34 @@
 ---
 title: "Example 8 & 9: Multinomial GLMMs with and without proportional odds"
+author: "Quentin D. Read, Bruce A. Craig, Philip M. Dixon, and Walter W. Stroup"
+bibliography: references.bib
+reference-location: margin
 format:
   html:
     embed-resources: true
-  docx:
-    embed-resources: true
+filters:
+  - collapse-output
+extensions:
+  collapse-output:
+    method: lua
+    default-open: false
+    summary-template: "{type} ({lines} lines)"
+    summaries:
+      stdout: "Console output (click to expand)"
 ---
 
-```{r,include=FALSE, eval=TRUE}
+```{r}
+#| include: false
+#| eval: true
 library(rmarkdown); library(kableExtra); library(gt)
 ```
 
 ::: callout-note
 ## GLMM Challenge
 
-Ordered categorical data are widespread in the agricultural and natural resource sciences. This typically crops up in contexts where an underlying continuous variable is difficult or impossible to measure, such as disease severity or body condition. Think of a phenotype like root structure scored on a scale from 1 to 5. In many cases, fitting a model assuming normally distributed error results in poor inferential and predictive performance. A GLM using a multinomial distribution and cumulative logit link function is a much better option (GLMM if random effects are required by the study design) because it naturally accommodates the categorical nature of the response. The multinomial cumulative logit GLM generalizes the binomial logit GLM to multiple ordered categories. In a multinomial cumulative logit model with *C* response categories, there are *C - 1* linear predictors, each with their own link function. Link function *c* maps the probability of the response being in the *c*th category (*c = 1, 2, ... C*) or lower, conditioned on fixed and random effects, to the log odds scale. 
+Ordered categorical data are widespread in the agricultural and natural resource sciences. They typically arise in contexts where an underlying continuous variable is difficult or impossible to measure, such as disease severity or body condition. Think of a phenotype like disease severity scored on a scale from 1 to 5. In many cases, fitting a model assuming normally distributed error results in poor inferential and predictive performance. A GLM using a multinomial distribution and cumulative logit link function is a much better option (GLMM if random effects are required by the study design) because it naturally accommodates the categorical nature of the response. The multinomial cumulative logit GLM generalizes the binomial logit GLM to multiple ordered categories. In a multinomial cumulative logit model with *C* response categories, there are *C - 1* linear predictors, each with their own link function. Link function *c* maps the probability of the response being in the *c*th category (*c = 1, 2, ... C*) or lower, conditioned on fixed and random effects, to the log odds scale. 
 
-An essential but commonly overlooked assumption when fitting multinomial cumulative logit models is the *proportional odds* assumption. Most software implementations of the multinomial cumulative logit model assume proportional odds by default. The proportional odds assumption means that no predictor variable, whether fixed or random, has a disproportionate effect on any specific category of the outcome variable. The odds ratios associated with the threshold between the *c*th and *c + 1*th category are the same across all the treatments and blocks. Under the proportional odds assumption, the odds ratio between any pair of treatments is the same for the odds of being less than or equal to category 1, the odds of being less than or equal to category 2, and so on (i.e., the odds are "proportional"). Operationally, this means that the fitted linear predictors in the proportional odds model may have different intercepts for each category of the response variable, but common fixed and random effect coefficients across all categories.
+An essential but commonly overlooked assumption when fitting multinomial cumulative logit models is the *proportional odds* assumption. Most software implementations of the multinomial cumulative logit model assume proportional odds by default. The proportional odds assumption means that no predictor variable, whether fixed or random, has a disproportionate effect on any specific category of the outcome variable. The odds ratios associated with the threshold between the *c*th and *c + 1*th category are the same across all the treatments and blocks. Under the proportional odds assumption, the odds ratio between any pair of treatments is the same for the odds of being less than or equal to category 1, the odds of being less than or equal to category 2, and so on (i.e., the odds are "proportional"). Operationally, this means that the fitted linear predictors in the proportional odds model may have different intercepts for each category of the response variable, but common fixed and random effect coefficients across all categories. Put informally, proportional odds means that we can make statements like "treatment A is associated with 50% higher odds of being in a greater category than treatment B" because the effects of each treatment don't depend on exactly which ordinal category is being considered.
 
 Yet, the proportional odds assumption need not always hold. In many real-world cases, variables do not have consistently positive or negative effects on the outcome; for example, a particular treatment may be associated with increased odds of the response being in low and high categories, but decreased odds of the response being in intermediate categories. If a proportional odds model is fit in an inappropriate context, nonsensical results and poor model fit ensue. In this document, we present two example datasets, one simulated with proportional odds and the other simulated with non-proportional odds. We survey the options for fitting multinomial cumulative logit models to ordinal data with and without the proportional odds assumption in R and SAS, including both Frequentist and Bayesian alternatives, and identify gaps where work is needed to make high-quality implementations available for users of both software platforms.
 
@@ -34,11 +46,18 @@ In this study, treatments were organized in two sets, with set A consisting of t
 
 Here we assume that the effects of treatment are fixed, and the effects of block and unit within block after accounting for treatment are random. This results in the following ANOVA shell, which summarizes the complete data generation process.
 
-> **NOTE 1 ON STUDY DESIGN**: Note that this ANOVA shell assumes the experimental unit, or unit of replication for treatment, is Unit within Clinic (a group of patients assigned to the same treatment within a clinic). Meanwhile, the observational unit on which the ordered categorical response is recorded is the individual patient. However, the models are fit assuming that the experimental unit is the individual. Preliminary analyses using Frequentist model fitting algorithms in both R and SAS found a zero or near-zero variance of the unit within clinic random intercept. This indicates that there was no evidence for unit effects after accounting for treatment, effectively dropping that term from the model. The Bayesian model with a weakly regularizing prior on the random effect standard deviation gives a positive estimate for the unit within clinic variance, although it has only a minor effect on the inference. Alternatively, the `nobound` option can be used in SAS PROC GLIMMIX to allow the variance component estimate for unit within block to be negative. The main consequence for inference is that the number of degrees of freedom is much higher when we assume independent assignment of treatments to individual patients within clinics. See below for more. 
+::: callout-note
+### Notes on study design
 
-> **NOTE 2 ON STUDY DESIGN**: Another thing to notice here is that treatments are organized in disconnected sets: treatments 0, 1, and 2 are only present at five of the ten clinics (blocks), and treatments 3, 4, and 5 at the other. Contrasts between treatment pairs that do not occur together within the same set, such as 0 vs. 3, can only be estimated if clinic is fitted as a random effect.
+Note that this ANOVA shell assumes the experimental unit, or unit of replication for treatment, is Unit within Clinic (a group of patients assigned to the same treatment within a clinic). Meanwhile, the observational unit on which the ordered categorical response is recorded is the individual patient. However, the models are fit assuming that the experimental unit is the individual. Preliminary analyses using Frequentist model fitting algorithms in both R and SAS found a zero or near-zero variance of the unit within clinic random intercept. This indicates that there was no evidence for unit effects after accounting for treatment, effectively dropping that term from the model. The Bayesian model with a weakly regularizing prior on the random effect standard deviation gives a positive estimate for the unit within clinic variance, although it has only a minor effect on the inference. Alternatively, the variance component estimate for unit within block can be allowed to be negative, for example by using the `nobound` option in SAS `PROC GLIMMIX`. The main consequence for inference is that the number of degrees of freedom is much higher when we assume independent assignment of treatments to individual patients within clinics. 
 
-```{r anova shell example 8, echo=FALSE}
+Another thing to notice here is that treatments are organized in disconnected sets: treatments 0, 1, and 2 are only present at five of the ten clinics (blocks), and treatments 3, 4, and 5 at the other. Contrasts between treatment pairs that do not occur together within the same set, such as 0 vs. 3, can only be estimated if clinic is fitted as a random effect.
+
+:::
+
+```{r anova shell example 8}
+#| echo: false
+
 table1 <- data.frame(
   col1 = c("Block", "", "Unit(Block)", "Total"),
   col2 = c(9, "", 20, 29),
@@ -56,8 +75,6 @@ kable(table1, col.names = NULL,  format = "html") |>
   kable_styling(full_width = TRUE, position = "center") |> 
   footnote("*Unit-within-block effects after accounting for treatment effects.")
 ```
-
-
 
 ### Statistical Model
 
@@ -83,11 +100,11 @@ $$\boldsymbol\eta_{0ij} = \log \Big( \frac {\pi_{\text{slight}, ij}} {1 - \pi_{\
 
 $$\boldsymbol\eta_{1ij} = \log \Big( \frac {\pi_{\text{slight}, ij} + \pi_{\text{moderate}, ij}} {1 - (\pi_{\text{slight}, ij} + \pi_{\text{moderate}, ij})} \Big)$$
 
-The cumulative multinomial probabilities are converted to the log-odds or logit scale using the cumulative logit link function. The first equation above is the log-odds of the outcome being slight or less (this only requires the probability of slight), and the second is the log-odds of the outcome being moderate or less (this requires the sum of the probability of slight and probability of moderate). The probability of severe or less is 1.
+The cumulative multinomial probabilities are converted to the log-odds or logit scale using the cumulative logit link function. The first equation above is the log-odds of the outcome being slight or less, and the second is the log-odds of the outcome being moderate or less (a function of the sum of the probability of slight and probability of moderate). A third link is not needed because the probability of severe or less is 1.
 
 ### Graphical test of proportional odds assumption
 
-There are several different ways to test the proportional odds assumption. The following graphical method was developed by Harrell (2001) and later expanded upon [by Harrell using a hybrid Bayesian/frequentist approach](https://www.fharrell.com/post/impactpo/). An example of the test can be found in [UCLA Statistics' tutorial on ordinal logistic regression](https://stats.oarc.ucla.edu/r/dae/ordinal-logistic-regression/). This test is done before fitting the multinomial cumulative logit model. 
+There are several different ways to test the proportional odds assumption. The following graphical method was developed by Harrell (@harrell_regression_2015) and later expanded upon [using a hybrid Bayesian/frequentist approach](https://www.fharrell.com/post/impactpo/) (@harrell_2002). An example of the test can be found in [UCLA Statistics' tutorial on ordinal logistic regression](https://stats.oarc.ucla.edu/r/dae/ordinal-logistic-regression/) (@ordinal_UCLA). This test is done before fitting the multinomial cumulative logit model. 
 
 To do Harrell's graphical test, we use the raw data to calculate the difference in the observed cumulative log odds of successive categories within each group. If, for each category threshold, the differences between the log-odds are roughly similar across all the groups, this indicates that each group's effect on the log-odds is roughly similar regardless of threshold. If this is the case, then the proportional odds assumption is tenable. Put informally, proportional odds means that we can make statements like "treatment A is associated with 50% higher odds of being in a greater category than treatment B" because the effects of each treatment don't depend on exactly which ordinal category is being considered.
 
@@ -95,7 +112,10 @@ In the example below, performing the graphical test is equivalent to doing a ser
 
 To implement the graphical test in R, first load all necessary packages. Import data. Set factor and ordered factor variables where necessary.
 
-```{r load packages, message=FALSE}
+```{r load packages}
+#| message: false
+#| warning: false
+
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -110,7 +130,8 @@ ex8 <- read.csv('Examples/Example 8/Example8 Data.csv') %>%
          Rating = ordered(factor(Rating, levels = c('slight', 'modera', 'severe'))))
 ```
 
-```{r plot theme, echo = FALSE}
+```{r plot theme}
+#| echo: false
 theme_set(
   theme_bw(base_size = 14) + 
     theme(panel.grid = element_blank(),
@@ -129,7 +150,8 @@ po_test_ex8 <- ex8 %>%
   mutate(diff = `Logodds Rating<=Moderate` - `Logodds Rating<=Slight`)
 ```
 
-```{r, echo = FALSE}
+```{r PO test table example 8}
+#| echo: false
 kable(po_test_ex8, col.names = NULL,  format = "html", digits = 3) |> 
   add_header_above(c('Treatment', 'Log-odds Rating ≤ slight', 'Log-odds Rating ≤ moderate', 'Difference')) |> 
   kable_styling(full_width = TRUE, position = "center") 
@@ -137,7 +159,10 @@ kable(po_test_ex8, col.names = NULL,  format = "html", digits = 3) |>
 
 Harrell recommends plotting the differences in the cumulative log odds values relative to zero, as follows.
 
-```{r, echo=FALSE, fig.height=4, fig.width=4}
+```{r PO test viz 1 example 8}
+#| echo: false
+#| fig-height: 4
+#| fig-width: 4
 ggplot(po_test_ex8, aes(y = Trt, x = diff)) +
   geom_point(size = 3) +
   geom_vline(xintercept = 0, linetype = 'dashed') +
@@ -146,7 +171,10 @@ ggplot(po_test_ex8, aes(y = Trt, x = diff)) +
 
 Potentially a more intuitive visualization is to plot the cumulative log odds values with a line connecting them to show the magnitude of the difference within each group, labeled with the value of that difference. Recall that the difference between two log-odds is the log odds ratio. In this case, the visualization shows roughly proportional odds.
 
-```{r, echo=FALSE, fig.height=4, fig.width=5.5}
+```{r PO test viz 2 example 8}
+#| echo: false
+#| fig-height: 4
+#| fig-width: 5.5
 library(ggtext)
 
 po_test_ex8_long <- po_test_ex8 %>%
@@ -166,10 +194,11 @@ ggplot(po_test_ex8_long, aes(x = Trt, y = logodds)) +
   labs(caption = 'Log odds ratio between consecutive\nthresholds shown for each treatment')
 ```
 
-
 ### Frequentist implementation: R `ordinal::clmm`
 
-The below code fits the multinomial cumulative logit model. Note the argument `threshold = 'flexible'` indicates that no constraints are put on the intercept terms (also known as thresholds or cut-points). The distance between the intercepts may be constrained in various ways; see documentation.
+*At the time of this writing, a [multinomial cumulative logit model had just been implemented in the development version of the R package glmmTMB](https://github.com/glmmTMB/glmmTMB/pull/1298) (@glmmTMB), but was not yet available in the version of the package published on CRAN. Therefore we only discuss and analyze the implementation in the ordinal package here.*
+
+The below code fits the multinomial cumulative logit model using `clmm()` from the R package ordinal (@ordinal_rpackage). Note the argument `threshold = 'flexible'` indicates that no constraints are put on the intercept terms (also known as thresholds or cut-points). The distance between the intercepts may be constrained in various ways; see documentation.
 
 ```{r CLMM fit example 8}
 fit8clmm <- clmm(Rating ~ Trt + (1 | Block),
@@ -181,7 +210,7 @@ fit8clmm <- clmm(Rating ~ Trt + (1 | Block),
 
 Below are shown the model's AIC value, the estimate of block variance, the fixed-effect coefficients, and the random intercepts associated with each block. Notice that there are no degrees of freedom associated with the fixed effects. Instead, z-statistics and their associated p-values are presented. See below for more discussion of the degrees of freedom issue.
 
-```{r}
+```{r CLMM output example 8}
 AIC(fit8clmm)
 VarCorr(fit8clmm)
 summary(fit8clmm)$coefficients
@@ -191,6 +220,848 @@ ranef(fit8clmm)
 ### Frequentist implementation: SAS `PROC GLIMMIX`
 
 The Frequentist model is implemented in SAS `PROC GLIMMIX` as shown below. Note that the coefficient estimates and standard errors are the same as in R's `ordinal::clmm()`. However the test statistics associated with the fixed effects are t-statistics, with the containment method used for the degrees of freedom. This is the number of observations - rank([X Z]), or the rank of the concatenated model matrices for the fixed and random effects.
+
+The following SAS code can be used to fit the Frequentist proportional odds model; the DATA step is not shown here. See Appendix A for full SAS code and output.
+
+```
+proc glimmix data=ratings method=laplace;
+  class blk trt (ref = "0");
+  model rating(order=data)=trt/dist=multinomial solution oddsratio;
+  random intercept / subject=blk solution; 	
+  estimate 'slight, t=0' intercept 1 0 trt 0 0 0 0 0 1,
+           'moderate, t=0' intercept 0 1 trt 0 0 0 0 0 1,
+	       'slight, t=1' intercept 1 0 trt 1 0 ,
+           'moderate, t=1' intercept 0 1 trt 1 0,
+           'slight, t=2' intercept 1 0 trt 0 1 0,
+           'moderate, t=2' intercept 0 1 trt 0 1 0, 
+           'slight, t=3' intercept 1 0 trt 0 0 1 0,
+           'moderate, t=3' intercept 0 1 trt 0 0 1 0,
+           'slight, t=4' intercept 1 0 trt 0 0 0 1 0,
+           'moderate, t=4' intercept 0 1 trt 0 0 0 1 0,
+           'slight, t=5' intercept 1 0 trt 0 0 0 0 1 0,
+           'moderate, t=5' intercept 0 1 trt 0 0 0 0 1 0 / ilink bycat;
+  freq y;
+run;
+```
+
+The following excerpts from the SAS output include the AIC, variance of the random intercepts, fixed and random effect estimates, and the cumulative marginal probability estimates for slight and moderate severity ratings for each treatment. Full output can be found in Appendix A.
+
+```
+
+                              Fit Statistics
+
+                   -2 Log Likelihood            1494.01
+                   AIC  (smaller is better)     1510.01
+
+Covariance Parameter Estimates
+ 
+                                                   Standard
+               Cov Parm     Subject    Estimate       Error
+
+               Intercept    blk          0.1181     0.07648
+
+                       Solutions for Fixed Effects
+ 
+                                      Standard
+  Effect     rating    trt  Estimate     Error     DF  t Value  Pr > |t|
+
+  Intercept  slight          -2.4916    0.2637      8    -9.45    <.0001
+  Intercept  moderate        -0.8451    0.2493      8    -3.39    0.0095
+  trt                  1      0.1644    0.2638    768     0.62    0.5334
+  trt                  2      1.3603    0.2592    768     5.25    <.0001
+  trt                  3      1.6081    0.3403    768     4.72    <.0001
+  trt                  4      2.2598    0.3366    768     6.71    <.0001
+  trt                  5      2.8443    0.3496    768     8.14    <.0001
+  trt                  0           0         .      .      .       .    
+
+                       Solution for Random Effects
+ 
+                                    Std Err
+  Effect      Subject   Estimate       Pred      DF   t Value   Pr > |t|
+
+  Intercept   blk 1      -0.4455     0.2472     768     -1.80     0.0719
+  Intercept   blk 2      0.02885     0.2219     768      0.13     0.8966
+  Intercept   blk 3       0.3225     0.2408     768      1.34     0.1809
+  Intercept   blk 4       0.2882     0.2340     768      1.23     0.2185
+  Intercept   blk 5       0.3660     0.2389     768      1.53     0.1259
+  Intercept   blk 6      -0.2854     0.2218     768     -1.29     0.1985
+  Intercept   blk 7     -0.03226     0.2285     768     -0.14     0.8878
+  Intercept   blk 8       0.2851     0.2305     768      1.24     0.2166
+  Intercept   blk 9      -0.1933     0.2363     768     -0.82     0.4135
+  Intercept   blk 10     -0.3240     0.2455     768     -1.32     0.1873
+
+                                 Estimates
+                                                                               Standard
+                           Standard                                               Error 
+Label           Estimate      Error      DF   t Value   Pr > |t|       Mean        Mean
+
+slight, t=0      -2.4916     0.2637     768     -9.45     <.0001    0.07645     0.01861
+moderate, t=0    -0.8451     0.2493     768     -3.39     0.0007     0.3005     0.05240
+slight, t=1      -2.3272     0.2491     768     -9.34     <.0001    0.08889     0.02018
+moderate, t=1    -0.6807     0.2345     768     -2.90     0.0038     0.3361     0.05233
+slight, t=2      -1.1313     0.2342     768     -4.83     <.0001     0.2439     0.04320
+moderate, t=2     0.5152     0.2303     768      2.24     0.0256     0.6260     0.05392
+slight, t=3      -0.8835     0.2346     768     -3.77     0.0002     0.2924     0.04855
+moderate, t=3     0.7630     0.2337     768      3.26     0.0011     0.6820     0.05069
+slight, t=4      -0.2318     0.2214     768     -1.05     0.2954     0.4423     0.05461
+moderate, t=4     1.4147     0.2291     768      6.18     <.0001     0.8045     0.03603
+slight, t=5       0.3527     0.2357     768      1.50     0.1351     0.5873     0.05714
+moderate, t=5     1.9992     0.2484     768      8.05     <.0001     0.8807     0.02609
+```
+
+### Bayesian implementation: Stan via R `brms::brm`
+
+The brms package in R (@burkner_2017) can be used to generate a Stan program (@stan_reference_manual_2026) that will fit a Bayesian version of the model using Hamiltonian Monte Carlo to sample the joint posterior distribution of the parameters. It is necessary to convert the data to a long form with one trial per row. 
+
+The likelihood is identical to the Frequentist models above. In addition, the following weakly informative prior distributions are assumed.
+
+- $\eta \sim N(0, 10)$
+- $\tau \sim N(0, 10)$
+- $\sigma_b \sim Gamma(1, 1)$
+
+Note that the model is parameterized using the standard deviation of the random block intercept (`class = sd`) rather than the variance.
+
+The joint posterior distribution of the model parameters is sampled using Hamiltonian Monte Carlo (HMC), with four Markov chains. Each Markov chain includes 1000 warmup iterations in which the hyperparameters of the HMC algorithm are tuned, followed by 1000 sampling iterations. The warmup iterations are not considered part of the posterior distribution, therefore there are 4000 posterior samples total. For practical purposes, when very accurate characterization of the tails of the posterior distribution is needed, more samples should be taken.
+
+```{r brm fit example 8}
+#| results: hide
+#| message: false
+#| warning: false
+ex8long <- ex8 %>% 
+  group_by(Block, Trt) %>%
+  reframe(Rating = rep(Rating, Y)) 
+
+fit8brm <- brm(Rating ~ Trt + (1 | Block),
+               data = ex8long,
+               family = cumulative(link = 'logit', threshold = 'flexible'),
+               prior = c(
+                 prior(normal(0, 10), class = Intercept),
+                 prior(normal(0, 10), class = b),
+                 prior(gamma(1, 1), class = sd)
+               ),
+               chains = 4, cores = 4, iter = 2000, warmup = 1000, seed = 202
+               )
+```
+
+### Post-model-fitting tests of proportional odds assumption
+
+In addition to the qualitative graphical test we showed above, another way to test the proportional odds assumption is to fit the model relaxing the proportional odds assumption and compare the models with a likelihood ratio test. This can be done in R using `ordinal::clmm2()`. Unfortunately, `ordinal::clmm()` does not support relaxing the proportional odds assumption (see the non-proportional odds example below for further discussion).
+
+```{r LRT example 8}
+proportional_odds_model <- clmm2(Rating ~ Trt,
+                                 random = Block,
+                                 weights = Y,
+                                 link = 'logistic',
+                                 threshold = 'flexible',
+                                 data = ex8)
+nonproportional_odds_model <- clmm2(Rating ~ Trt,
+                                    random = Block,
+                                    nominal = ~ Block,
+                                    weights = Y,
+                                    link = 'logistic',
+                                    threshold = 'flexible',
+                                    data = ex8)
+
+anova(proportional_odds_model, nonproportional_odds_model)
+```
+
+The likelihood ratio test supports relaxing the proportional odds assumption. The data here were simulated under the proportional odds assumption, indicating that the likelihood ratio test may be too strict.
+
+Lastly, the Brant-Wald test is a type of Wald Chi-squared test of the null hypothesis that the proportional odds assumption holds (@brant_1990). In R, it is implemented in `brant::brant()` (@brant_rpackage) and `gofcat::brant.test()` (@gofcat_rpackage), which yield identical results (not shown). These packages do not have methods for the mixed model case, only for fixed-effects models such as those fit with `MASS::polr()` (@venables_ripley_2002) and `ordinal::clm()`. Therefore we refit the model with only the fixed effect of treatment before doing the Brant-Wald test. Including block as a fixed effect would be acceptable for testing whether the proportional odds assumption holds across blocks. Another thing to note is that `brant()` and `brant.test()` ignore the `weights` argument in the model, so we need to refit the model using the long-form disaggregated version of the data that was also used above for fitting the `brm()` model.
+
+Below we see that the null hypothesis of proportional odds with respect to treatment is not rejected in the omnibus case nor for any of the individual treatments, supporting the proportional odds assumption. 
+
+```{r Brant example 8}
+fit8clm <- clm(
+  Rating ~ Trt,
+  link = 'logit',
+  threshold = 'flexible',
+  data = ex8long
+)
+
+gofcat::brant.test(fit8clm)
+```
+
+Because the Brant-Wald test is limited to simple models, and the likelihood ratio test may incorrectly reject the null hypothesis of proportional odds, it is recommended to use Harrell's graphical analysis, and to graphically assess model fit by comparing the model predictions to observations.
+
+### Estimating treatment means
+
+In SAS `PROC GLIMMIX`, the cumulative probabilities of each disease severity rating class threshold for each treatment, not conditioned on any of the random effects, are obtained using the `estimate` statement within the modeling procedure. Note that `PROC GLIMMIX` does not support the calculation of these marginal means for multinomial models. However, the same estimates can be obtained more concisely, without having to explicitly construct the linear combinations of predictors, with `PROC PLM` as follows (results not shown):
+
+```
+proc glimmix data=ratings method=laplace;
+  class blk trt (ref = "0");
+  model rating(order=data)=trt/dist=multinomial;
+  random intercept / subject=blk; 	
+  freq y;
+  store fit;
+run;
+
+proc plm restore=fit;
+  lsmeans trt / ilink;
+run;
+```
+
+In R `ordinal::clmm()`, the probabilities are obtained using `emmeans::emmeans()` (@emmeans_rpackage). The function `emmeans()` offers a much wider variety of computations of treatment means for multinomial models than SAS `PROC PLM`. While the SAS procedure only provides the means in the form of cumulative probabilities for each threshold, the `mode` argument of `emmeans()` can be used to produce different quantities. However, the SAS NLMEANS macro, version 3.0 or greater (@sas_nlmeans_macro), may be used to obtain the same variety of transformations of the treatment means as `emmeans()`, by supplying the transformations explicitly through the keyword `fdata`. See example below. In both the NLMEANS macro and in `emmeans()`, the standard errors of the different transformations are calculated using the delta method.
+
+Use `mode = 'cum.prob'` and `specs = ~ cut | Trt` to obtain the cumulative probabilities at each threshold, equivalent to SAS. (Here and in some subsequent code examples, the output is not displayed by default and may be expanded by clicking.)
+
+```{r emm cumulative prob}
+#| output-fold: true
+emmeans(fit8clmm, specs = ~ cut | Trt, mode = 'cum.prob')
+```
+
+Use `mode = 'prob'` and `specs = ~ Rating | Trt` to obtain the marginal probability for each treatment, resulting in three probabilities that sum to one.
+
+```{r emm prob}
+#| output-fold: true
+emmeans(fit8clmm, specs = ~ Rating | Trt, mode = 'prob')
+```
+
+Lastly use `mode = 'mean.class'` with `specs = ~ Trt` to obtain the so-called mean class predictions for each treatment. These are commonly presented to summarize the predictions of ordered multinomial GLMMs. To obtain mean class predictions, the rating categories are treated as numerical variables (in this case, slight=1, moderate=2, severe=3) and the mean class prediction for each treatment is calculated as the weighted mean of the categories, weighted by their marginal probabilities for that treatment. The validity of mean class predictions as a measure of central tendency for a particular group depends heavily on the assumption of proportional odds, which is discussed at greater length below. 
+
+```{r emm mean class}
+#| output-fold: true
+emmeans(fit8clmm, specs = ~ Trt, mode = 'mean.class')
+```
+
+Following is an example of how to use the `NLMEANS` macro in SAS to calculate equivalent estimates to the `mode = 'prob'` estimates of `emmeans()`. Note that the parameter `df=768` must be explicitly provided to the macro to obtain the confidence intervals based on 768 degrees of freedom, or `NLMEANS` will default to asymptotic Wald statistics similarly to `emmeans()`. (The `df` argument can also be provided to `emmeans()` if desired.) Output is not shown.
+
+```
+proc plm restore=fit;
+	lsmeans trt / ilink e cl plots=none;
+	ods output coef=coeffs;
+run;
+
+/* Here we construct the estimates for the treatment-wise probabilities of each rating class
+   Cumulative probabilities are numbered mu1-mu12 in the order they appear in the lsmeans output.
+*/
+data fd;
+	set=1;
+	length label f $1000;
+	infile datalines delimiter=',';
+	input label f;
+	datalines;
+	P(slight trt0),   mu6
+	P(moderate trt0), mu12-mu6
+	P(severe trt0),   1-mu12
+	P(slight trt1),   mu1
+	P(moderate trt1), mu7-mu1
+	P(severe trt1),   1-mu7
+	P(slight trt2),   mu2
+	P(moderate trt2), mu8-mu2
+	P(severe trt2),   1-mu8
+	P(slight trt3),   mu3
+	P(moderate trt3), mu9-mu3
+	P(severe trt3),   1-mu9
+	P(slight trt4),   mu4
+	P(moderate trt4), mu10-mu4
+	P(severe trt4),   1-mu10
+	P(slight trt5),   mu5
+	P(moderate trt5), mu11-mu5
+	P(severe trt5),   1-mu11
+	;
+
+%inc "fusion_62362_20_nlmeans.sas.txt"; * v3.0 of NLMeans macro must be used;
+
+%nlmeans(instore=fit, link=clogit, coef=coeffs, fdata=fd, df=768)
+```
+
+### Discussion of degrees of freedom
+
+All of the above predictions obtained by `emmeans()` are accompanied by asymptotic 95% confidence intervals based on the z-distribution; no attempt is made to estimate the degrees of freedom. This is also the case for the parameter estimate summary obtained with the `summary()` method of `clmm` objects in R. 
+
+In contrast, SAS `PROC GLIMMIX` by default uses containment degrees of freedom. The way the containment degrees of freedom are calculated may not be immediately obvious because the experimental design is disconnected, with confounding between block and treatment. Treatments 0, 1, and 2 always appear together in five of the ten incomplete blocks, while treatments 3, 4, and 5 always appear together in the other five. According to `PROC GLIMMIX`, the Rating intercepts have 8 degrees of freedom (10 blocks - 2 intercepts), not 9 as the ANOVA shell would indicate. The treatment coefficients have 768 degrees of freedom. One might expect 767 (783 observations - 16 parameters estimated) but after estimating the treatment effects, one fewer parameter is needed to identify all the block effects, thus we obtain 768. 
+
+It is important to be aware that in a disconnected design such as this one, not all pairwise treatment contrasts should have the same number of degrees of freedom associated with them. The difference between treatments that occur in the same block, such as treatment 0 versus treatment 1, is purely a within-block estimate; block variance does not enter into the standard error of that difference and the degrees of freedom should be 768 (the error df). But for between-block differences, such as treatment 0 versus treatment 3, the degrees of freedom should be a Satterthwaite combination of error df and block df. However, the SAS containment method uses error df for both types. In general, if the incomplete block design were connected, treatment differences would combine within- and between-block information (Satterthwaite df); but the degrees of freedom would only be the same for all differences if the incomplete block design were perfectly balanced.
+
+For disconnected designs, pairwise differences between means that never appear together in the same block cannot be estimated at all if block is treated as a fixed effect. But if block is random, the differences can be estimated. Therefore it is crucial that block is treated as a random effect if it is desired to estimate all pairwise treatment differences in a disconnected design. (@stroup_sas_2018; section on spurious non-estimability).
+
+> Note: Because `PROC GLIMMIX` uses t-statistics to estimate the confidence intervals of the estimated means, it is consequential whether we assume independent assignment of treatments to the individual patients, or assignment to groups of patients (the degrees of freedom is much lower in the latter case). Because `emmeans()` uses large-sample statistics and asymptotic confidence intervals, if we do include the unit within block random intercept, because it is estimated as near zero, the confidence intervals are equivalent regardless. See note above the ANOVA shell. 
+
+### Pairwise means comparisons
+
+We may use `emmeans::contrast()` in R to obtain pairwise differences between the cumulative or category-wise probabilities from the `ordinal::clmm()` model. As noted above, no attempt is made to calculate degrees of freedom associated with the differences. Normally, `contrast()` detects that the underlying model used a link function and will do the comparisons on the link scale before inverting. However, in this case the auto-detection fails. Therefore, to obtain the contrasts on the log odds ratio scale, we need to use the `regrid()` function to specify that the logit link was used.
+
+```{r contrast prob}
+#| output-fold: true
+emmeans(fit8clmm, specs = ~ cut + Trt, mode = 'cum.prob', type = 'response') |> 
+  regrid(transform = 'logit') |>
+  contrast(method = 'pairwise', by = 'cut', adjust = 'tukey')
+
+emmeans(fit8clmm, specs = ~ Rating + Trt, mode = 'prob', type = 'response') |> 
+  regrid(transform = 'logit') |>
+  contrast(method = 'pairwise', by = 'Rating', adjust = 'tukey')
+```
+
+Contrasts may also be obtained for the mean class predictions; these are the differences between mean class predictions in "rating units" for each pair of treatments.
+
+```{r contrast mean class}
+#| output-fold: true
+emmeans(fit8clmm, specs = ~ Trt, mode = 'mean.class') |> 
+  contrast(method = 'pairwise', adjust = 'tukey')
+```
+
+In SAS, we may use `PROC PLM` to obtain the pairwise treatment differences between each of the cumulative probabilities at the slight-moderate and moderate-severe thresholds, in the form of log odds ratios. As discussed above, 768 degrees of freedom are used for each of these comparisons, regardless of whether they are pairs that occur together in the same blocks (output not shown).
+
+```
+proc plm restore=fit;
+ 	lsmeans trt / ilink cl pdiff adjust=tukey;
+run;
+```
+
+### Graphical comparison of estimates
+
+This figure is a graphical comparison of the marginal probabilities of each disease severity rating for each treatment, and their 95% confidence intervals (95% credible intervals for the Bayesian implementation). The `NLMEANS` macro was used to obtain the estimates from the SAS model.
+
+The R and SAS Frequentist estimates have identical point estimates. The 95% confidence intervals for the SAS `PROC GLIMMIX` estimates are imperceptibly different than those for the R `ordinal::clmm()` estimates, as they are based on 768 containment degrees of freedom, as opposed to asymptotic intervals with infinite degrees of freedom. Thus they are ~1.0016 times wider than the asymptotic intervals. Bayesian credible intervals differ from their Frequentist counterparts for reasons discussed above.
+
+```{r load example 8 estimates}
+#| echo: false
+ex8sasest <- read.csv('Examples/Example 8/ex8sasnlmeans.csv') %>%
+  separate(Label, into = c('Rating', 'Trt'), sep = ' ') %>%
+  mutate(Rating = gsub('P(', '', Rating, fixed = TRUE) %>% factor(levels = c('slight', 'moderate', 'severe')),
+         Trt = stringr::str_extract(Trt, '[0-9]'))
+
+ex8clmmest <- emmeans(fit8clmm, ~ Rating + Trt, mode = 'prob') %>%
+  summary() %>%
+  mutate(Rating = factor(Rating, labels = c('slight', 'moderate', 'severe')))
+
+ex8brmest_draws <- posterior_epred(fit8brm, newdata = data.frame(Trt = levels(ex8$Trt)), re_formula = ~ 0)
+ex8brmest <- apply(ex8brmest_draws, 2:3, quantile, probs = c(0.5, 0.025, 0.975)) %>%
+  reshape2::melt(varnames = c('quantile', 'Trt', 'Rating')) %>% 
+  reshape2::dcast(Trt + Rating ~ quantile) %>%
+  mutate(Rating = factor(Rating, labels = c('slight', 'moderate', 'severe')), Trt = as.character(Trt - 1))
+```
+
+```{r plot estimates}
+#| echo: false
+# Join all together
+ex8allest <- bind_rows(
+  cbind(method = 'Stan (brm)', ex8brmest) %>% rename(prob = `50%`, Lower = `2.5%`, Upper = `97.5%`),
+  cbind(method = 'clmm', ex8clmmest) %>% rename(Lower = asymp.LCL, Upper = asymp.UCL, StdErr = SE),
+  cbind(method = 'SAS (PROC GLIMMIX)', ex8sasest) %>% rename(prob = Estimate, StdErr = StandardError)
+)
+
+ggplot(ex8allest, aes(x = Rating, y = prob, group = method)) +
+  geom_errorbar(aes(ymin = Lower, ymax = Upper), position = position_dodge(width = 0.5), width = 0.5) +
+  geom_point(aes(color = method), size = 2, position = position_dodge(width = 0.5)) +
+  facet_wrap(~ Trt) +
+  see::scale_color_okabeito(order = c(6, 4, 5)) +
+  labs(y = 'estimated marginal probability') +
+  theme(legend.position = 'bottom')
+```
+
+## Non-proportional odds example
+
+The second example dataset was simulated assuming non-proportional odds. It was originally presented in *Generalized Linear Mixed Models*, 2nd edition, Section 14.4 (@stroup_generalized_2024).
+
+The research question answered by this hypothetical study is: Do three different poinsettia varieties differ in their quality ratings? Similar to the first example, quality is a categorical variable collected on an ordinal scale with three levels, from lowest to highest *C* (acceptable, but only just ...), *B* (excellent), and *A* (superior). 
+
+In the study, poinsettias of three different varieties were rated for quality at 12 different growers. At each grower, a variable number of plants from each variety was rated (between 40 and 49, with median 44.5). This constitutes a randomized complete block design, where the experimental unit is the combination of grower and variety. The ANOVA shell for the design follows.
+
+```{r anova shell example 9}
+#| echo: false
+table2 <- data.frame(
+  col1 = c("Grower", "Variety", "Grower × Variety", "Total"),
+  col2 = c(11, 2, 22, 35),
+  col3 = c('$$g_j \\text{ i.i.d. } N(0, \\sigma^2_g)$$', '$$\\nu_i$$', '$$gv_{ij} \\text{ i.i.d. } N(0, \\sigma^2_{gv})$$', '')
+)
+
+kable(table2, col.names = NULL,  format = "html") |> 
+  add_header_above(c('Source of variation', 'df', 'Model effect & distribution'), align = "l") |> 
+  row_spec(4, bold = TRUE) |> 
+  kable_styling(full_width = TRUE, position = "center") 
+```
+
+### Statistical Model
+
+We will fit the proportional odds and non-proportional odds cumulative logit GLMMs to this dataset, to illustrate the importance of relaxing the proportional odds assumption.
+
+#### Linear predictors
+
+$$\boldsymbol\eta_{cij} = \eta_{c} + \nu_{ci} + g_{j} + gv_{ij}$$
+
+Here, $\boldsymbol\eta_{cij}$ denotes the *c*th linear predictor ($c = 0, 1$) for the *ij*th grower-variety combination, $\eta_c$ is the intercept for the *c*th linear predictor, $\nu_{ci}$ is the variety effect for the *c*th linear predictor, and $g_j$ and $gv_{ij}$ are the random effects of grower and variety nested within grower, respectively. The key difference between this and the previous model is that now not only the intercept, but also the variety effect, is indexed with *c*. Now, the fixed effect of variety is not the same for each category threshold's linear predictor. It is also possible to relax the proportional odds assumption for the random terms, but in this case we are assuming the effect of grower and variety within grower on each of the thresholds is the same. Only two variance components will be estimated overall, rather than two for each category threshold.
+
+#### Distributions
+
+$$y_{\text{A}, ij}, y_{\text{B}, ij}, y_{\text{C}, ij} | b_{ij} \sim \text{Multinomial}(N_{ij}, \pi_{\text{A}, ij}, \pi_{\text{B}, ij}, \pi_{\text{C}, ij})$$
+
+$$g_j \text{ i.i.d. } N(0, \sigma^2_g)$$
+
+$$gv_{ij} \text{ i.i.d. } N(0, \sigma^2_{gv})$$
+
+Identically to the previous example, for each of the experimental units (grower-variety combinations), the counts of plants in the *ij*th grower-variety combination rated with each of the three quality ratings follows a multinomial distribution with parameter $N_{ij}$ being the total number of plants in the *ij*th grower-variety combination and three $\pi_{c,ij}$ parameters, each one being the probability of the *c*th quality rating class in that grower-variety combination. As before, the three $\pi_{c,ij}$ values must sum to 1.
+
+#### Link function
+
+$$\boldsymbol\eta_{0ij} = \log \Big( \frac {\pi_{\text{A}, ij}} {1 - \pi_{\text{A}, ij}} \Big)$$
+
+$$\boldsymbol\eta_{1ij} = \log \Big( \frac {\pi_{\text{A}, ij} + \pi_{\text{B}, ij}} {1 - (\pi_{\text{A}, ij} + \pi_{\text{B}, ij})} \Big)$$
+
+The link functions have identical forms to those from the proportional odds model.
+
+### Graphical test of the proportional odds assumption
+
+Following is Harrell's graphical test (@harrell_2022) of the proportional odds assumption for the poinsettia quality dataset, presented in tabular and graphical form.
+
+In the R code below, we import the data, and we convert `Grower` and `Variety` to factors, and `Rating` to an ordered factor with `C` as the lowest rating. We reshape the data into long format with one row per individual observation. This will be needed for the Brant-Wald test and for fitting the brms model.
+
+```{r import example 9}
+ex9 <- read.csv('Examples/Example 9/Example9 Data.csv') %>%
+  mutate(across(c(Grower, Variety), factor),
+         Rating = ordered(Rating, levels = c('C', 'B', 'A')))
+
+ex9long <- ex9 %>% 
+  group_by(Grower, Variety) %>%
+  reframe(Rating = rep(Rating, N_Plants)) 
+```
+
+We compute the differences in cumulative log-odds between the C-B and B-A thresholds for each variety separately.
+
+```{r Harrell test example 9}
+po_test_ex9 <- ex9 %>%
+  group_by(Variety) %>%
+  summarize(`Logodds Rating<=C` = qlogis(weighted.mean(Rating <= 'C', w = N_Plants)),
+            `Logodds Rating<=B` = qlogis(weighted.mean(Rating <= 'B', w = N_Plants))) %>%
+  mutate(diff = `Logodds Rating<=B` - `Logodds Rating<=C`)
+```
+
+We see below that the differences in cumulative log-odds between the C-B and B-A thresholds are very different between the three varieties, indicating that the proportional odds assumption is very likely to be inappropriate. The difference is especially small for variety 3, which is a "polarizing" variety: it tended to be rated either negatively (C) or positively (A), with few intermediate (B) ratings. Thus, the difference between the cumulative log-odds at the C-B and B-A thresholds is much smaller than for the other varieties.
+
+```{r PO test viz 1 example 9}
+#| echo: false
+#| fig-height: 4
+#| fig-width: 4
+kable(po_test_ex9, col.names = NULL,  format = "html", digits = 3) |> 
+  add_header_above(c('Treatment', 'Log-odds Rating ≤ C', 'Log-odds Rating ≤ B', 'Difference')) |> 
+  kable_styling(full_width = TRUE, position = "center") 
+
+ggplot(po_test_ex9, aes(y = Variety, x = diff)) +
+  geom_point(size = 3) +
+  geom_vline(xintercept = 0, linetype = 'dashed') +
+  labs(x = 'difference in cumulative logits', y = 'variety')
+```
+
+In addition to the visualization recommended by Harrell, here is an alternative and possibly more intuitive visualization showing the highly disproportional odds.
+
+```{r PO test viz 2 example 9}
+#| echo: false
+#| fig-height: 4
+#| fig-width: 5.5
+po_test_ex9_long <- po_test_ex9 %>%
+  select(-diff) %>%
+  pivot_longer(starts_with('Logodds'), values_to = 'logodds')
+
+ggplot(po_test_ex9_long, aes(x = Variety, y = logodds)) +
+  geom_line(aes(group = Variety), linetype = 'dashed') +
+  geom_point(aes(color = name), size = 3) +
+  theme(legend.position = 'none') +
+  see::scale_color_okabeito() +
+  scale_x_discrete(name = 'Variety', labels = paste('Variety', 1:3)) +
+  scale_y_continuous(name = 'Log odds') +
+  annotate(geom = 'richtext', x = 1, y = -1.25, label = 'Log odds (Rating &leq; C)', color = palette.colors()[3]) +
+  annotate(geom = 'richtext', x = 1, y = 1, label = 'Log odds (Rating &leq; B)', color = palette.colors()[2]) +
+  geom_richtext(aes(y = (`Logodds Rating<=C` + `Logodds Rating<=B`)/2, label = round(diff, 2)), hjust = c(0.5, 0.5, -0.25), data = po_test_ex9) +
+  labs(caption = 'Log odds ratio between consecutive\nthresholds shown for each variety')
+```
+
+
+### Brant-Wald test of proportional odds assumption
+
+As in the above example, we may also do the Brant-Wald test as implemented in `gofcat::brant.test()`, if a formal test of the null hypothesis of proportional odds is desired. Note that as in the previous example the long form data with one trial per row is needed because `brant.test()` would not give correct results if the `weights` argument were used when fitting the model to the aggregated version of the data. Also note that as before we must fit a simplified version of the model ignoring grower and grower-variety interaction effects.
+
+Unsurprisingly, the Brant-Wald test indicates that the proportional odds assumption with respect to variety is grossly violated, as shown by the huge values of the Chi-squared statistic for both the omnibus test and the individual variety terms.
+
+```{r Brant example 9}
+fit9clm <- clm(
+  Rating ~ Variety,
+  link = 'logit',
+  threshold = 'flexible',
+  data = ex9long
+)
+
+gofcat::brant.test(fit9clm)
+```
+
+### Proportional odds model is inappropriate
+
+Harrell's graphical test and the Brant-Wald test clearly indicate that the proportional odds assumption is not valid for this dataset. In practice, however, a proportional odds model is often fit in inappropriate contexts. Below, we illustrate the lack of fit of the proportional odds model by plotting predictions from the proportional odds model fit to the example dataset side-by-side with the observations. 
+
+Below, a proportional odds model with the appropriate fixed and random effects terms is fit in R using `ordinal::clmm()`. The marginal probabilities of each quality rating for each variety are calculated using the function `emmeans::emmeans()` with the syntax `emmeans(fit, ~ c | g, mode = 'prob')` where `c` is the categorical outcome variable and `g` the fixed effect variable. 
+
+```{r proportional odds clmm example 9}
+fit9clmm_po <- clmm(Rating ~ Variety + (1 | Grower) + (1 | Variety:Grower),
+                 weights = N_Plants,
+                 link = 'logit',
+                 threshold = 'flexible',
+                 data = ex9)
+
+emm_fit9clmm_po <- summary(emmeans(fit9clmm_po, ~ Rating | Variety, mode = 'prob')) %>%
+  mutate(Rating = factor(Rating, labels = c('C', 'B', 'A')))
+```
+
+```{r emmeans PO output example 9}
+#| echo: false
+#| output-fold: true
+emm_fit9clmm_po
+```
+
+
+The predictions, with asymptotic 95% confidence intervals, are plotted alongside the observed proportions for each combination of grower and variety. It is clear that the constraint imposed by the proportional odds model that the effect of variety be the same for the C-B and B-A thresholds is inappropriate for this dataset.
+
+```{r PO prediction plot example 9}
+#| echo: false
+#| fig-height: 4
+#| fig-width: 8
+ex9_summ <- ex9 %>%
+  group_by(Grower, Variety) %>%
+  mutate(p = N_Plants/sum(N_Plants))
+
+ggplot(ex9_summ, aes(x = Rating, color = Rating)) +
+  geom_point(aes(y = p), size = 2, alpha = 0.5, position = position_nudge(x = -0.15)) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), data = emm_fit9clmm_po, width = 0.2, linewidth = 0.8, position = position_nudge(x = 0.15)) +
+  geom_point(aes(y = prob), data = emm_fit9clmm_po, size = 3, position = position_nudge(x = 0.15)) +
+  facet_wrap(~ Variety, labeller = as_labeller(\(x) paste('Variety', x))) +
+  see::scale_color_okabeito() +
+  theme(
+    legend.position = 'none'
+  ) +
+  labs(y = 'proportion of plants', x = 'rating')
+```
+
+The inappropriateness of the proportional odds model is further shown by the mean class predictions. Similar to the previous example, the rating categories are treated as numerical variables (in this case, C=1, B=2, A=3) and the mean class prediction for each variety is calculated as the weighted mean of the categories, weighted by their marginal probabilities for that variety. Because mean class predictions rely on the assumption of proportional odds, they are nonsensical when the proportional odds assumption is violated, as shown below.
+
+```{r emm mean class example 9}
+emm_fit9clmm_po_meanclass <- summary(emmeans(fit9clmm_po, ~ Variety, mode = 'mean.class'))
+```
+
+```{r EMM mean class example 9 output}
+#| echo: false
+#| output-fold: true
+emm_fit9clmm_po_meanclass
+```
+
+```{r EMM mean class plot example 9}
+#| echo: false
+#| fig-height: 4
+#| fig-width: 4
+ggplot(emm_fit9clmm_po_meanclass, aes(x = Variety)) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, linewidth = 0.8) +
+  geom_point(aes(y = mean.class), size = 3) +
+  scale_y_continuous(name = 'mean rating', limits = c(1, 3), breaks = c(1, 2, 3), labels = c('1.0 (C)', '2.0 (B)', '3.0 (A)')) +
+  labs(x = 'variety')
+```
+
+### Frequentist implementation: SAS `PROC NLMIXED`
+
+An implementation of the statistical model is possible in SAS. Because `PROC GLIMMIX` does not support relaxing the proportional odds assumption, we use `PROC NLMIXED`. This requires explicitly writing out the equations for the linear predictors and the inverse link functions. Starting values for the parameters must also be provided. In addition, the linear predictor term must be explicitly constrained to be greater than zero. If the term is less than or equal to zero, it is set to a small positive value (1 &times; 10<sup>-8</sup>).
+
+Here, `qpoints=1` in the procedure statement sets the number of quadrature points to 1, meaning that the Laplace approximation is used.
+
+Only the `PROC GLIMMIX` code and not the preceding data step is shown here, and only an excerpt of the output is shown. Full code and output is in Appendix C.
+
+```
+proc nlmixed data=Numeric_ratings qpoints=1;
+  parms int_0=-0.5 int_1=0.5 tau_01=0 tau_11=0 tau_02=0 tau_12=0 sdb=0.5 sdbt=0.25; 
+  eta_0=int_0+(variety=1)*tau_01+(variety=2)*tau_02+blk_j+bt_1j*(variety=1)+bt_2j*(variety=2)+bt_3j*(variety=3);
+  eta_1=int_1+(variety=1)*tau_11+(variety=2)*tau_12+blk_j+bt_1j*(variety=1)+bt_2j*(variety=2)+bt_3j*(variety=3);
+  pi_0=1/(1+exp(-eta_0));
+  pi_1=1/(1+exp(-eta_1))-1/(1+exp(-eta_0));
+  pi_2=1-pi_0-pi_1;
+  /* Y=1 => rating A */
+  /* Y=2 => rating B */
+  /* Y=3 => rating C */
+  if y=1 then pi=pi_0;
+  else if y=2 then pi=pi_1;
+  else pi=pi_2;
+  p = (pi>0 and pi<=1)*pi + (pi<=0)*1e-8 + (pi>1);
+  LogL = log(p);
+  model y ~ general(LogL);
+  random blk_j bt_1j bt_2j bt_3j ~ normal([0,0,0,0],[sdb*sdb,0,sdbt*sdbt,0,0,sdbt*sdbt,0,0,0,sdbt*sdbt]) subject=Grower out=reff; 
+  estimate 'blk variance ' sdb*sdb;
+  estimate 'blk*trt variance' sdbt*sdbt;
+  contrast 'separate variety effect by link?' tau_01-Tau_11,tau_02-Tau_12; 
+  contrast 'trt effect?' tau_01, Tau_11,tau_02, Tau_12;
+  estimate 'prob rating=A variety=1' 1/(1+exp(-(int_0+tau_01))); 
+  estimate 'prob rating=B variety=1' 1/(1+exp(-(int_1+tau_11)))-1/(1+exp(-(int_0+tau_01)));
+  estimate 'prob rating=C variety=1' 1-(1/(1+exp(-(int_1+tau_11)))); 
+  estimate 'prob rating=A variety=2' 1/(1+exp(-(int_0+tau_02))); 
+  estimate 'prob rating=B variety=2' 1/(1+exp(-(int_1+tau_12)))-1/(1+exp(-(int_0+tau_02)));
+  estimate 'prob rating=C variety=2' 1-(1/(1+exp(-(int_1+tau_12)))); 
+  estimate 'prob rating=A variety=3' 1/(1+exp(-int_0)); 
+  estimate 'prob rating=B variety=3' 1/(1+exp(-int_1))-1/(1+exp(-int_0));
+  estimate 'prob rating=C variety=3' 1-(1/(1+exp(-int_1)));
+run;
+```
+
+The following excerpted output shows the parameter estimates and the additional requested estimates and contrasts.
+
+```
+                           Parameter Estimates
+ 
+                     Standard                             95% Confidence
+Parameter  Estimate     Error    DF  t Value  Pr > |t|        Limits
+
+int_0       -0.1336    0.4993     8    -0.27    0.7958   -1.2851    1.0179
+int_1        0.2118    0.4996     8     0.42    0.6827   -0.9402    1.3638
+tau_01      -0.7560    0.4907     8    -1.54    0.1620   -1.8874    0.3755
+tau_11       0.7957    0.4921     8     1.62    0.1446   -0.3391    1.9305
+tau_02      -2.9984    0.5339     8    -5.62    0.0005   -4.2294   -1.7673
+tau_12       2.9702    0.5430     8     5.47    0.0006    1.7180    4.2224
+sdb          1.2411    0.3392     8     3.66    0.0064    0.4588    2.0234
+sdbt         1.1390    0.1914     8     5.95    0.0003    0.6975    1.5805
+
+ Contrasts
+ 
+                                        Num     Den
+   Label                                 DF      DF    F Value    Pr > F
+
+   separate variety effect by link?       2       8     139.23    <.0001
+   trt effect?                            4       8      69.65    <.0001
+
+                           Additional Estimates
+ 
+                                   Standard
+Label                    Estimate     Error    DF  t Value  Pr > |t|  Alpha      Lower    Upper
+
+blk variance               1.5403    0.8421     8     1.83    0.1048   0.05    -0.4015   3.4822
+blk*trt variance           1.2973    0.4361     8     2.97    0.0177   0.05     0.2916   2.3029
+prob rating=A variety=1    0.2912    0.1028     8     2.83    0.0221   0.05    0.05407   0.5283
+prob rating=B variety=1    0.4413   0.02716     8    16.25    <.0001   0.05     0.3787   0.5040
+prob rating=C variety=1    0.2675   0.09784     8     2.73    0.0257   0.05    0.04186   0.4931
+prob rating=A variety=2   0.04181   0.02168     8     1.93    0.0900   0.05   -0.00819   0.0918
+prob rating=B variety=2    0.9183   0.01696     8    54.16    <.0001   0.05     0.8792   0.9574
+prob rating=C variety=2   0.03985   0.02101     8     1.90    0.0945   0.05   -0.00861   0.0883
+prob rating=A variety=3    0.4666    0.1243     8     3.75    0.0056   0.05     0.1801   0.7532
+prob rating=B variety=3   0.08611   0.01524     8     5.65    0.0005   0.05    0.05096   0.1213
+prob rating=C variety=3    0.4472    0.1235     8     3.62    0.0068   0.05     0.1624   0.7320
+```
+
+## Frequentist implementation: R TMB
+
+To our knowledge, no "off-the-shelf" Frequentist model fitting package in R currently supports relaxing the proportional odds assumption in a flexible enough context to fit this model. See below for more details on this. However, it is possible to fit the model using the Template Model Builder (TMB; @kristensen_tmb_2016). The likelihood is specified similarly to `PROC NLMIXED` but written using a C++ model template. The C++ program is compiled. Following that, an R script is used to put the data into an appropriate format, define starting values for the parameters, and estimate the model. There are also many additional estimates specified: the marginal probabilities of each rating for each variety as well as the same values expressed as log odds, the contrasts for the joint hypothesis tests, and the variance components. Laplace approximation is used as the integration method. Here we use a quasi-Newton method (`BFGS`) for optimization, similar to the `PROC NLMIXED` example. 
+
+The full C++ model template and R code for compiling the model, setting initial parameter values, performing the optimization, and extracting estimates are in Appendix D. Code for obtaining the additional estimates generated by `PROC NLMIXED` is in Appendix E.
+
+The following tables include the eight parameter estimates (two intercepts, four category-specific effects by variety, and two random effect standard deviations) and additional estimated quantities. The estimates and standard errors are very close to those obtained from `PROC NLMIXED`. A minor difference from `PROC NLMIXED` is that the random effect standard deviations are estimated on the log scale.
+
+```{r estimate tables TMB model}
+#| echo: false
+
+# Prepare inputs for TMB 
+data.list <- list(
+  N       = nrow(ex9long),
+  y       = 4L - as.integer(ex9long$Rating), # This is in the reverse order as I did it for CLMM and Stan (because A=best and C=worst), but if we set it up this way, the TMB output will match the SAS output.
+  variety = as.integer(ex9long$Variety),
+  grower  = as.integer(ex9long$Grower) - 1
+)
+
+# Compile C++ model 
+if (!file.exists("ex9.dll")) compile("ex9.cpp")
+dyn.load(dynlib("ex9"))
+
+# Initial parameter values 
+Ng <- length(unique(data.list$grower))
+parameters <- list(
+  int_0    = -0.5,
+  int_1    =  0.5,
+  tau_01   =  0,
+  tau_11   =  0,
+  tau_02   =  0,
+  tau_12   =  0,
+  log_sdb  = log(0.5),
+  log_sdbt = log(0.25),
+  blk = rep(0, Ng),
+  bt1 = rep(0, Ng),
+  bt2 = rep(0, Ng),
+  bt3 = rep(0, Ng)
+)
+# Build AD model 
+obj <- MakeADFun(
+  data = data.list,
+  parameters = parameters,
+  random = c("blk", "bt1", "bt2", "bt3"),
+  DLL = "ex9",
+  silent = TRUE
+)
+
+# Optimize 
+opt <- optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = 'BFGS')
+
+# Standard errors and post‑hoc estimates
+report <- sdreport(obj, bias.correct = FALSE) # contains ADREPORT results
+est <- summary(report)
+
+kable(as.data.frame(est[1:8,]), caption = 'Parameter estimates from non-proportional odds model: R TMB', digits = 4) |>
+  kable_styling(full_width = TRUE, position = "center")
+
+est_names <- c("sdb * sdb", "sdbt * sdbt",
+               "1.0/(1.0+exp(-(int_0 + tau_01)))", 
+               "1.0/(1.0+exp(-(int_1 + tau_11))) - 1.0/(1.0+exp(-(int_0 + tau_01)))", 
+               "1.0 - 1.0/(1.0+exp(-(int_1 + tau_11)))", "1.0/(1.0+exp(-(int_0 + tau_02)))", 
+               "1.0/(1.0+exp(-(int_1 + tau_12))) - 1.0/(1.0+exp(-(int_0 + tau_02)))", 
+               "1.0 - 1.0/(1.0+exp(-(int_1 + tau_12)))", "1.0/(1.0+exp(-int_0))", 
+               "1.0/(1.0+exp(-int_1)) - 1.0/(1.0+exp(-int_0))", "1.0 - 1.0/(1.0+exp(-int_1))")
+
+additional_estimates <- as.data.frame(est[est_names, ])
+row.names(additional_estimates) <- c('block (grower) variance', 'block by treatment (grower by variety) variance', 
+                                     c(outer(c('A','B','C'), 1:3, \(rating, variety) paste('probability of rating =', rating, 'for variety', variety))))
+
+kable(additional_estimates, caption = 'Additional estimates from non-proportional odds model: R TMB', digits = 4) |>
+  kable_styling(full_width = TRUE, position = "center")
+```
+
+### Bayesian implementation: Stan via R `brms::brm`
+
+A proportional odds model, which we already know to be inappropriate, may be fit using Stan, via the R interface `brms::brm()`, with similar syntax to the previous `brms` example. The model formula specifies a fixed effect for variety, a random intercept for each grower, and a random intercept for variety nested within grower, with no covariance between the random effects. The cumulative response family with logit link and flexible category thresholds is specified. Weakly informative prior distributions are assumed:
+
+- $\eta \sim N(0, 10)$
+- $\nu \sim N(0, 10)$
+- $\sigma_g \sim Gamma(1, 1)$
+- $\sigma_{gv} \sim Gamma(1, 1)$
+
+The HMC algorithm is run using four Markov chains, with 1000 discarded warmup iterations and 1000 sampling iterations per chain, for a total of 4000 samples from the joint posterior distribution. 
+
+Note that the control parameter `adapt_delta` is set to 0.95, higher than the default value of 0.8. This reduces the sampler's step size, making it explore the posterior slightly less efficiently, but eliminating divergent transitions. 
+
+```{r brm fit PO example 9}
+#| results: hide
+#| message: false
+fit9brm_po <- brm(
+  Rating ~ Variety + (1 | Grower) + (1 | Variety:Grower),
+  family = cumulative(link = 'logit', threshold = 'flexible'),
+  prior = c(
+    prior(normal(0, 10), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(gamma(1, 1), class = sd)
+  ),
+  data = ex9long,
+  chains = 4, cores = 4, iter = 2000, warmup = 1000, seed = 130,
+  control = list(adapt_delta = 0.95)
+)
+```
+
+The non-proportional odds model has identical syntax except for the fixed effect term in the model formula: there, `cs(Variety)` indicates category-specific effects on Variety. This relaxes the proportional odds assumption by allowing the two linear predictors to have different variety effects. 
+
+```{r brm fit nonPO example 9}
+#| warning: false
+#| results: hide
+#| message: false
+fit9brm_nonpo <- brm(
+  Rating ~ cs(Variety) + (1 | Grower) + (1 | Variety:Grower),
+  family = cumulative(link = 'logit', threshold = 'flexible'),
+  prior = c(
+    prior(normal(0, 10), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(gamma(1, 1), class = sd)
+  ),
+  data = ex9long,
+  chains = 4, cores = 4, iter = 2000, warmup = 1000, seed = 130,
+  control = list(adapt_delta = 0.95)
+)
+```
+
+Posterior predictive check plots for each model are a way to graphically check whether the proportional odds assumption is met. The bars (*y*) are the observed rating counts for each variety, and the dots with error bars (*y<sub>rep</sub>*) are the median and range of 10 draws from the posterior predictive distribution. It is clear that relaxing the proportional odds assumption is necessary to get agreement between the observations and the model predictions.
+
+```{r PP check example 9}
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-height: 4
+#| fig-width: 6
+pp_check(fit9brm_po, type = 'bars_grouped', group = 'Variety') + 
+  scale_x_continuous(breaks = 1:3, labels = LETTERS[1:3], name = 'Rating') + 
+  ggtitle('Proportional odds model')
+pp_check(fit9brm_nonpo, type = 'bars_grouped', group = 'Variety') + 
+  scale_x_continuous(breaks = 1:3, labels = LETTERS[1:3], name = 'Rating') + 
+  ggtitle('Non-proportional odds model')
+```
+
+Leave-one-out cross-validation comparison between the two models is another way to diagnose whether the proportional odds assumption is met. Expected log pointwise posterior density difference is very large, indicating that relaxing the proportional odds assumption results in much better model performance.
+
+```{r LOO example 9}
+#| warning: false
+loo(fit9brm_po, fit9brm_nonpo, compare = TRUE)
+```
+
+### Comparison of estimates
+
+Below is a graphical comparison of the estimates for the Frequentist implementations in SAS `PROC NLMIXED` and R `TMB` versus the Stan `brms::brm()` Bayesian implementation. In all cases these are marginal estimates not conditioned on the random effects. The R and SAS Frequentist implementations are nearly identical in their point estimates. The 95% confidence intervals differ for the following reason. In both cases, confidence intervals were constructed using the number of parameters in the model (8) as the degrees of freedom. However, the SAS confidence intervals were constructed by simply multiplying the standard error by the corresponding quantile of the *t*-distribution and adding and subtracting from the point estimate on the probability scale. This leads to intervals that are symmetrical on the probability scale but asymmetrical on the log-odds scale, and which may overlap 0 or 1. In fact here several of the intervals do overlap 0. We constructed the confidence intervals for the `TMB` estimates in a more appropriate manner, by obtaining the confidence interval endpoints on the log-odds scale and inverse transforming to the probability scale.
+
+The same reasons discussed for the previous example apply to explain why there are differences between the Frequentist and Bayesian estimates and their 95% confidence / credible intervals. (Note that the 95% confidence intervals constructed on the log scale and inverse transformed agree more closely with the Bayesian credible intervals.) Regardless of those minor differences, all models fit the data well due to the flexibility gained by relaxing the proportional odds assumption.
+
+```{r posterior pred example 9}
+#| warning: false
+epred_nonpo <- posterior_epred(fit9brm_nonpo, newdata = data.frame(Variety = c('1','2','3')), re_formula = ~ 0)
+
+ex9brmsest <- apply(epred_nonpo, 2:3, quantile, probs = c(0.5, 0.025, 0.975)) %>%
+  reshape2::melt(varnames = c('quantile', 'Variety', 'Rating')) %>% 
+  reshape2::dcast(Variety + Rating ~ quantile)
+
+# Construct TMB confidence intervals on the log-odds scale and inverse transform 
+ex9tmbest <- as.data.frame(est[66:74, ]) %>%
+  mutate(Rating = rep(c('A', 'B', 'C'), 3),
+         Variety = rep(1:3, each = 3),
+         Lower = Estimate - `Std. Error` * qt(0.975, df = 8),
+         Upper = Estimate + `Std. Error` * qt(0.975, df = 8),
+         across(c(Estimate, Lower, Upper), plogis))
+
+```
+
+```{r ex9 comparison fig}
+#| echo: false
+#| fig-height: 5
+#| fig-width: 7
+ex9sasest <- read.csv('Examples/Example 9/SASestimatesex9.csv') %>%
+  filter(grepl('^prob', Label)) %>%
+  mutate(Rating = rep(c('A', 'B', 'C'), 3),
+         Variety = rep(1:3, each = 3))
+
+ex9allest <- bind_rows(
+  cbind(method = 'Stan (brms:brm)', ex9brmsest) %>% rename(Estimate = `50%`, Lower = `2.5%`, Upper = `97.5%`),
+  cbind(method = 'SAS (PROC NLMIXED)**', ex9sasest),
+  cbind(method = 'R (TMB)*', ex9tmbest)
+)
+
+ggplot(ex9allest, aes(x = Rating, y = Estimate, group = method)) +
+  geom_errorbar(aes(ymin = Lower, ymax = Upper), position = position_dodge(width = 0.5), width = 0.25) +
+  geom_point(aes(color = method), size = 2, position = position_dodge(width = 0.5)) +
+  facet_wrap(~ Variety, labeller = as_labeller(\(x) paste('Variety', x))) +  see::scale_color_okabeito(order = c(6, 4, 5)) +
+  theme(legend.position = 'bottom') +
+  labs(y = 'marginal probability', x = 'rating',
+       caption = '*95% CI constructed on the log-odds scale and inverse-transformed\n**95% CI constructed on the probability scale')
+```
+
+### Post-fitting tests of proportional odds assumption
+
+There are other tests of the proportional odds assumption that can be done after model fitting (@stroup_generalized_2024). The first approach is model comparison: after fitting the model that relaxes the proportional odds assumption, we may compare fit statistics between the models with and without the assumption. Of course, this is not possible if one of the models is not implemented in a particular software platform. For SAS users, Stroup et al. (2024) recommend fitting the generalized logit model in `PROC GLIMMIX`; although this model assumes unordered categories, it has the same linear predictors as the non-proportional odds model with ordered categories. The fit statistics for this model can be compared to the proportional-odds fit statistics from `PROC GLIMMIX`; if the proportional odds model is preferred, the user may avoid the lengthy process of writing `PROC NLMIXED` code.
+
+The second approach is to do formal hypothesis tests of the null hypothesis that $v_{0i} = v_{1i}$ for each of the varieties indexed with $i$. In this particular case because there are only two category thresholds, there is only one test per group (variety), but there would be more tests per group when there are four or more categories. A similar test could be done to compare random effect variances between category thresholds, if the proportional odds assumption is also being relaxed for random terms in the model. Rejection of any of the null hypotheses would be evidence that the proportional odds assumption is violated, justifying fitting the model that relaxes the assumption.
+
+### Discussion of model implementations in software
+
+To our knowledge there is no satisfactory Frequentist implementation of the above model currently available in any R package, that does not require the user to fully specify the likelihood from scratch, as was necessary in both SAS `PROC NLMIXED` and R TMB. Why not? To accommodate the violation of the proportional odds assumption, the model must include **category-specific effects**, sometimes referred to as **nominal effects**. In addition, the model must also include **multiple random effects**. The best-known general-purpose Frequentist GLMM packages in R (lme4 and glmmTMB; @lme4; @glmmTMB) do not support cumulative logistic models at all, at least not without extensive customization similar to what was done in PROC NLMIXED for this example. Plans are afoot, as of the time of this writing, to add cumulative logistic models to glmmTMB, and potentially add support for relaxing the proportional odds assumption in the future.
+
+We searched extensively for other R packages that might implement the model. The R package ordinal implements cumulative logistic mixed models. It implements cumulative logistic mixed models with category-specific effects (i.e., allowing violation of proportional odds) in the `clmm2()` function, and it implements cumulative logistic mixed models with multiple random effects in the `clmm()` function. Unfortunately, though, both category-specific effects and multiple random effects are not implemented within the same function. Furthermore, the package is not under active development, so it is unlikely that these features will be combined. 
+
+There are a few other R packages that initially showed some promise, including mixcat (@mixcat_rpackage), mclogit (@mclogit_rpackage), and mgcv (@Wood_2017). The mixcat and mclogit packages have relatively poor documentation. We were unable to reproduce the model in either of them. The mixcat package in particular lacks most of the standard R GLMM methods like `predict()` and `simulate()`. Therefore even if the model can be fit with mixcat, it would not be integrated with packages such as emmeans and DHARMa, making it not very useful. In mgcv, a GAMM fitting package, there is a multinomial response family and the ability to fit random effects using the spline syntax. However, we were unable to reproduce the desired model because the `multinom()` family in mgcv is an unordered multinomial, rather than an ordered multinomial with relaxation of proportional odds assumption for the fixed effects. The `ocat()` (ordered categorical) family in mgcv also differs in important respects from our desired model.
+
+#### Frequentist implementations: paths forward
+
+It is unlikely that additional features will be added to SAS `PROC GLIMMIX`, thus for the foreseeable future SAS users that want to fit a non-proportional odds multinomial GLMM will need to use `PROC NLMIXED` and fully specify the likelihood "by hand." While this is a satisfactory solution for savvy users, it is a relatively error-prone process that may be daunting to inexperienced users.
+
+In R, the situation is similar. Few users are willing or able to fully specify the likelihood, as required by TMB. However it is possible to create user-defined response families for GLMMs using a package such as glmmTMB (@glmmTMB), glmmADMB (@Fournier2012), or GLMMadaptive (@GLMMadaptive_rpackage). The multinomial could be added, which would allow constructing a cumulative logit model with category-specific effects and nested random effects. The Bayesian solutions described above, whether it be the off-the-shelf version provided by brms or a Stan program with the likelihood fully specified by the user similarly to `PROC NLMIXED` (see Appendix F), are also suitable. They result in similar coefficient estimates to the maximum likelihood methods when weakly informative prior distributions are used. However, if a Frequentist implementation in R is desired that does not require constructing a fully customized likelihood, the most promising avenue is to add that functionality to glmmTMB or another general-purpose GLMM package. The above TMB template could be used as a starting point, if it is modified into a more general version that implements the matrix algebra instead of manipulating individual scalar coefficients.
+
+
+
+
+
+
+## Appendices
+
+### Appendix A: Full SAS code and output for proportional odds model fit with `PROC GLIMMIX`
 
 ```{sas GLIMMIX fit example 8}
 data ratings;
@@ -288,7 +1159,6 @@ datalines;
 90 10 5 severe 7 
 ;
 
-
 proc glimmix data=ratings method=laplace;
   class blk trt (ref = "0");
   model rating(order=data)=trt/dist=multinomial solution oddsratio;
@@ -309,80 +1179,9 @@ proc glimmix data=ratings method=laplace;
 run;
 ```
 
-### Bayesian implementation: Stan via R `brms::brm`
+### Appendix B: Quantitative comparison of implementations of proportional odds model
 
-The **brms** package can be used to generate a Stan program that will fit a Bayesian version of the model using Hamiltonian Monte Carlo to sample the joint posterior distribution of the parameters. It is necessary to convert the data to a long form with one trial per row. 
-
-The likelihood is identical to the Frequentist models above. In addition, the following weakly informative prior distributions are assumed.
-
-- $\eta \sim N(0, 10)$
-- $\tau \sim N(0, 10)$
-- $\sigma_b \sim Gamma(1, 1)$
-
-Note that the model is parameterized using the standard deviation of the random block intercept (`class = sd`) rather than the variance.
-
-The joint posterior distribution of the model parameters is sampled using Hamiltonian Monte Carlo (HMC), with four Markov chains. Each Markov chain includes 1000 warmup iterations in which the hyperparameters of the HMC algorithm are tuned, followed by 1000 sampling iterations. The warmup iterations are not considered part of the posterior distribution, therefore there are 4000 posterior samples total. For practical purposes, when very accurate characterization of the tails of the posterior distribution is needed, more samples should be taken.
-
-```{r brm fit example 8, results = 'hide', message = FALSE}
-ex8long <- ex8 %>% 
-  group_by(Block, Trt) %>%
-  reframe(Rating = rep(Rating, Y)) 
-
-fit8brm <- brm(Rating ~ Trt + (1 | Block),
-               data = ex8long,
-               family = cumulative(link = 'logit', threshold = 'flexible'),
-               prior = c(
-                 prior(normal(0, 10), class = Intercept),
-                 prior(normal(0, 10), class = b),
-                 prior(gamma(1, 1), class = sd)
-               ),
-               chains = 4, cores = 4, iter = 2000, warmup = 1000, seed = 202
-               )
-```
-
-### Post-model-fitting tests of proportional odds assumption
-
-In addition to the qualitative graphical test we showed above, another way to test the proportional odds assumption is to fit the model relaxing the proportional odds assumption and compare the models with a likelihood ratio test. This can be done in R using `ordinal::clmm2()`. Unfortunately, `ordinal::clmm()` does not support relaxing the proportional odds assumption (see the non-proportional odds example below for further discussion).
-
-```{r LRT example 8}
-proportional_odds_model <- clmm2(Rating ~ Trt,
-                                 random = Block,
-                                 weights = Y,
-                                 link = 'logistic',
-                                 threshold = 'flexible',
-                                 data = ex8)
-nonproportional_odds_model <- clmm2(Rating ~ Trt,
-                                    random = Block,
-                                    nominal = ~ Block,
-                                    weights = Y,
-                                    link = 'logistic',
-                                    threshold = 'flexible',
-                                    data = ex8)
-anova(proportional_odds_model, nonproportional_odds_model)
-```
-
-The likelihood ratio test supports relaxing the proportional odds assumption. The data here were simulated under the proportional odds assumption, indicating that the likelihood ratio test may be too strict.
-
-Lastly, the Brant-Wald test is a type of Wald Chi-squared test of the null hypothesis that the proportional odds assumption holds (Brant 1990; https://doi.org/10.2307/2532457). In R, it is implemented in `brant::brant()` and `gofcat::brant.test()`, which yield identical results (not shown). These packages do not have methods for the mixed model case, only for fixed-effects models such as those fit with `MASS::polr()` and `ordinal::clm()`. Therefore we refit the model with only the fixed effect of treatment before doing the Brant-Wald test. Including block as a fixed effect would be acceptable for testing whether the proportional odds assumption holds across blocks. Another thing to note is that `brant()` and `brant.test()` ignore the `weights` argument in the model, so we need to refit the model using the long-form disaggregated version of the data that was also used above for fitting the `brm()` model.
-
-Below we see that the null hypothesis of proportional odds with respect to treatment is not rejected in the omnibus case nor for any of the individual treatments, supporting the proportional odds assumption. 
-
-```{r Brant example 8}
-fit8clm <- clm(
-  Rating ~ Trt,
-  link = 'logit',
-  threshold = 'flexible',
-  data = ex8long
-)
-
-gofcat::brant.test(fit8clm)
-```
-
-Because the Brant-Wald test is limited to simple models, and the likelihood ratio test may falsely reject the null hypothesis of proportional odds, it is recommended to use Harrell's graphical analysis, and to graphically assess model fit by comparing the model predictions to observations.
-
-### Quantitative comparison of implementations
-
-The following is a comparison of parameter estimates generated by fitting the multinomial proportional odds model to the Example 8 dataset (the first of the two example datasets presented above) using all available methods of estimation:
+The following is a comparison of parameter estimates generated by fitting the multinomial proportional odds model to the example dataset using all available methods of estimation:
 
 - In R `ordinal::clmm()` we may only choose the number of quadrature points for adaptive Gaussian quadrature. In the case of 1 quadrature point we get the Laplace approximation. Here I show results for 1, 5, and 10 quadrature points.
 - In SAS `PROC GLIMMIX`, we may choose the Laplace approximation, adaptive quadrature where the number of quadrature points is chosen adaptively, or from four different pseudo-likelihood methods. Here I show results for MSPL and MMPL, because RSPL and RMPL did not converge.
@@ -444,7 +1243,10 @@ run;
 
 In the following table, parameter estimates are shown rounded to four decimal places, with their standard errors in parentheses.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r full estimate comparison table}
+#| echo: false
+#| message: false
+#| warning: false
 nagq_coeffs <- lapply(fit8clmm_varynagq, function(fit) summary(fit)$coefficients)
 nagq_var <- lapply(fit8clmm_varynagq, VarCorr)
 
@@ -521,351 +1323,10 @@ The pseudo-likelihood methods allow a wider variety of degrees of freedom adjust
 
 Qualitatively, the Bayesian coefficient estimates from `brms::brm()` are similar to the Frequentist estimates; of course, the Bayesian estimates will not agree exactly because (1) weakly informative priors are used, which have a minor influence on the posterior estimates, (2) Monte Carlo is stochastic and a finite number of samples are taken from the posterior distribution, from which we take the median to get the point estimates of the parameters, (3) the Bayesian credible intervals propagate uncertainty of the variance components, thus they would differ slightly from the Frequentist confidence intervals even if we used flat priors and took enough MC samples to reduce MC sampling error to zero, and (4) for parameters that have a right-skewed posterior distribution, using the mean as the point estimate will result in a higher value than the mode. Point 4 is the primary reason why the Bayesian point estimate of the block variance is much larger than the estimate from the Frequentist methods.
 
-### Estimating treatment means
-
-In SAS `PROC GLIMMIX`, the cumulative probabilities of each disease severity rating class threshold for each treatment, not conditioned on any of the random effects, are obtained using the `estimate` statement within the modeling procedure. Note that `PROC GLIMMIX` does not support the calculation of these marginal means for multinomial models. However, the same estimates can be obtained more concisely, without having to explicitly construct the linear combinations of predictors, with `PROC PLM` as follows (results not shown):
-
-```
-proc glimmix data=ratings method=laplace;
-  class blk trt (ref = "0");
-  model rating(order=data)=trt/dist=multinomial;
-  random intercept / subject=blk; 	
-  freq y;
-  store fit;
-run;
-
-proc plm restore=fit;
-  lsmeans trt / ilink;
-run;
-```
-
-In R `ordinal::clmm()`, the probabilities are obtained using `emmeans::emmeans()`. The function `emmeans()` offers a much wider variety of computations of treatment means for multinomial models than SAS `PROC PLM`. While the SAS procedure only provides the means in the form of cumulative probabilities for each threshold, the `mode` argument of `emmeans()` can be used to produce different quantities. However, the SAS NLMEANS macro, version 3.0 or greater, may be used to obtain the same variety of transformations of the treatment means as `emmeans()`, by supplying the transformations explicitly through the keyword `fdata`. See example below. In both the NLMEANS macro and in `emmeans()`, the standard errors of the different transformations are calculated using the delta method.
-
-Use `mode = 'cum.prob'` and `specs = ~ cut | Trt` to obtain the cumulative probabilities at each threshold, equivalent to SAS.
-
-```{r emm cumulative prob}
-emmeans(fit8clmm, specs = ~ cut | Trt, mode = 'cum.prob')
-```
-
-Use `mode = 'prob'` and `specs = ~ Rating | Trt` to obtain the marginal probability for each treatment, resulting in three probabilities that sum to one.
-
-```{r emm prob}
-emmeans(fit8clmm, specs = ~ Rating | Trt, mode = 'prob')
-```
-
-Lastly use `mode = 'mean.class'` with `specs = ~ Trt` to obtain the so-called mean class predictions for each treatment. These are commonly presented to summarize the predictions of ordered multinomial GLMMs. To obtain mean class predictions, the rating categories are treated as numerical variables (in this case, slight=1, moderate=2, severe=3) and the mean class prediction for each treatment is calculated as the weighted mean of the categories, weighted by their marginal probabilities for that treatment. The validity of mean class predictions as a measure of central tendency for a particular group depends heavily on the assumption of proportional odds, which is discussed at greater length below. 
-
-```{r emm mean class}
-emmeans(fit8clmm, specs = ~ Trt, mode = 'mean.class')
-```
-
-Following is an example of how to use the NLMEANS macro in SAS to calculate equivalent estimates to the `mode = 'prob'` estimates of `emmeans()`. Note that the parameter `df=768` must be explicitly provided to the macro to obtain the confidence intervals based on 768 degrees of freedom, or NLMEANS will default to asymptotic Wald statistics similarly to `emmeans()`. (The `df` argument can also be provided to `emmeans()` if desired.)
-
-```
-proc plm restore=fit;
-	lsmeans trt / ilink e cl plots=none;
-	ods output coef=coeffs;
-run;
-
-/* Here we construct the estimates for the treatment-wise probabilities of each rating class
-   Cumulative probabilities are numbered mu1-mu12 in the order they appear in the lsmeans output.
-*/
-data fd;
-	set=1;
-	length label f $1000;
-	infile datalines delimiter=',';
-	input label f;
-	datalines;
-	P(slight trt0),   mu6
-	P(moderate trt0), mu12-mu6
-	P(severe trt0),   1-mu12
-	P(slight trt1),   mu1
-	P(moderate trt1), mu7-mu1
-	P(severe trt1),   1-mu7
-	P(slight trt2),   mu2
-	P(moderate trt2), mu8-mu2
-	P(severe trt2),   1-mu8
-	P(slight trt3),   mu3
-	P(moderate trt3), mu9-mu3
-	P(severe trt3),   1-mu9
-	P(slight trt4),   mu4
-	P(moderate trt4), mu10-mu4
-	P(severe trt4),   1-mu10
-	P(slight trt5),   mu5
-	P(moderate trt5), mu11-mu5
-	P(severe trt5),   1-mu11
-	;
-
-%inc "fusion_62362_20_nlmeans.sas.txt"; * v3.0 of NLMeans macro must be used;
-
-%nlmeans(instore=fit, link=clogit, coef=coeffs, fdata=fd, df=768)
-```
-
-### Discussion of degrees of freedom
-
-All of the above predictions obtained by `emmeans()` are accompanied by asymptotic 95% confidence intervals based on the z-distribution; no attempt is made to estimate the degrees of freedom. This is also the case for the parameter estimate summary obtained with the `summary()` method of `clmm` objects in R. 
-
-In contrast, SAS `PROC GLIMMIX` by default uses containment degrees of freedom. The way the containment degrees of freedom are calculated may not be immediately obvious because the experimental design is disconnected, with confounding between block and treatment. Treatments 0, 1, and 2 always appear together in five of the ten incomplete blocks, while treatments 3, 4, and 5 always appear together in the other five. According to `PROC GLIMMIX`, the Rating intercepts have 8 degrees of freedom (10 blocks - 2 intercepts), not 9 as the ANOVA shell would indicate. The treatment coefficients have 768 degrees of freedom. One might expect 767 (783 observations - 16 parameters estimated) but after estimating the treatment effects, one fewer parameter is needed to identify all the block effects, thus we obtain 768. 
-
-It is important to be aware that in a disconnected design such as this one, not all pairwise treatment contrasts should have the same number of degrees of freedom associated with them. The difference between treatments that occur in the same block, such as treatment 0 versus treatment 1, is purely a within-block estimate; block variance does not enter into the standard error of that difference and the degrees of freedom should be 768 (the error df). But for between-block differences, such as treatment 0 versus treatment 3, the degrees of freedom should be a Satterthwaite combination of error df and block df. However, the SAS containment method uses error df for both types. In general, if the incomplete block design were connected, treatment differences would combine within- and between-block information (Satterthwaite df); but the degrees of freedom would only be the same for all differences if the incomplete block design were perfectly balanced.
-
-For disconnected designs, pairwise differences between means that never appear together in the same block cannot be estimated at all if block is treated as a fixed effect. But if block is random, the differences can be estimated. Therefore it is crucial that block is treated as a random effect if it is desired to estimate all pairwise treatment differences in a disconnected design. (Reference: SAS for Mixed Models, section on spurious non-estimability)
-
-> Note: Because `PROC GLIMMIX` uses t-statistics to estimate the confidence intervals of the estimated means, it is consequential whether we assume independent assignment of treatments to the individual patients, or assignment to groups of patients (the degrees of freedom is much lower in the latter case). Because `emmeans()` uses large-sample statistics and asymptotic confidence intervals, if we do include the unit within block random intercept, because it is estimated as near zero, the confidence intervals are equivalent regardless. See note above the ANOVA shell. 
-
-### Pairwise means comparisons
-
-We may use `emmeans::contrast()` in R to obtain pairwise differences between the cumulative or category-wise probabilities from the `ordinal::clmm()` model. As noted above, no attempt is made to calculate degrees of freedom associated with the differences. Normally, `contrast()` detects that the underlying model used a link function and will do the comparisons on the link scale before inverting. However, in this case the auto-detection fails. Therefore, to obtain the contrasts on the log odds ratio scale, we need to use the `regrid()` function to specify that the logit link was used.
-
-```{r contrast prob}
-emmeans(fit8clmm, specs = ~ cut + Trt, mode = 'cum.prob', type = 'response') |> 
-  regrid(transform = 'logit') |>
-  contrast(method = 'pairwise', by = 'cut', adjust = 'tukey')
-
-emmeans(fit8clmm, specs = ~ Rating + Trt, mode = 'prob', type = 'response') |> 
-  regrid(transform = 'logit') |>
-  contrast(method = 'pairwise', by = 'Rating', adjust = 'tukey')
-```
-
-Contrasts may also be obtained for the mean class predictions; these are the differences between mean class predictions in "rating units" for each pair of treatments.
-
-```{r contrast mean class}
-emmeans(fit8clmm, specs = ~ Trt, mode = 'mean.class') |> 
-  contrast(method = 'pairwise', adjust = 'tukey')
-```
-
-In SAS, we may use `PROC PLM` to obtain the pairwise treatment differences between each of the cumulative probabilities at the slight-moderate and moderate-severe thresholds, in the form of log odds ratios. As discussed above, 768 degrees of freedom are used for each of these comparisons, regardless of whether they are pairs that occur together in the same blocks (results not shown).
-
-```
-proc plm restore=fit;
- 	lsmeans trt / ilink cl pdiff adjust=tukey;
-run;
-```
-
-### Graphical comparison of estimates
-
-This figure is a graphical comparison of the marginal probabilities of each disease severity rating for each treatment, and their 95% confidence intervals (95% credible intervals for the Bayesian implementation). The `NLMEANS` macro was used to obtain the estimates from the SAS model.
-
-The R and SAS Frequentist estimates have identical point estimates. The 95% confidence intervals for the SAS `PROC GLIMMIX` estimates are imperceptibly different than those for the R `ordinal::clmm()` estimates, as they are based on 768 containment degrees of freedom, as opposed to asymptotic intervals with infinite degrees of freedom. Thus they are ~1.0016 times wider than the asymptotic intervals. Bayesian credible intervals differ from their Frequentist counterparts for reasons discussed above.
-
-```{r load example 8 estimates, echo = FALSE}
-ex8sasest <- read.csv('Examples/Example 8/ex8sasnlmeans.csv') %>%
-  separate(Label, into = c('Rating', 'Trt'), sep = ' ') %>%
-  mutate(Rating = gsub('P(', '', Rating, fixed = TRUE) %>% factor(levels = c('slight', 'moderate', 'severe')),
-         Trt = stringr::str_extract(Trt, '[0-9]'))
-
-ex8clmmest <- emmeans(fit8clmm, ~ Rating + Trt, mode = 'prob') %>%
-  summary() %>%
-  mutate(Rating = factor(Rating, labels = c('slight', 'moderate', 'severe')))
-
-ex8brmest_draws <- posterior_epred(fit8brm, newdata = data.frame(Trt = levels(ex8$Trt)), re_formula = ~ 0)
-ex8brmest <- apply(ex8brmest_draws, 2:3, quantile, probs = c(0.5, 0.025, 0.975)) %>%
-  reshape2::melt(varnames = c('quantile', 'Trt', 'Rating')) %>% 
-  reshape2::dcast(Trt + Rating ~ quantile) %>%
-  mutate(Rating = factor(Rating, labels = c('slight', 'moderate', 'severe')), Trt = as.character(Trt - 1))
-```
-
-```{r plot estimates, echo = FALSE}
-# Join all together
-ex8allest <- bind_rows(
-  cbind(method = 'Stan (brm)', ex8brmest) %>% rename(prob = `50%`, Lower = `2.5%`, Upper = `97.5%`),
-  cbind(method = 'clmm', ex8clmmest) %>% rename(Lower = asymp.LCL, Upper = asymp.UCL, StdErr = SE),
-  cbind(method = 'SAS (PROC GLIMMIX)', ex8sasest) %>% rename(prob = Estimate, StdErr = StandardError)
-)
-
-ggplot(ex8allest, aes(x = Rating, y = prob, group = method)) +
-  geom_errorbar(aes(ymin = Lower, ymax = Upper), position = position_dodge(width = 0.5), width = 0.5) +
-  geom_point(aes(color = method), size = 2, position = position_dodge(width = 0.5)) +
-  facet_wrap(~ Trt) +
-  see::scale_color_okabeito(order = c(6, 4, 5)) +
-  labs(y = 'estimated marginal probability') +
-  theme(legend.position = 'bottom')
-```
-
-## Non-proportional odds example
-
-The second example dataset was simulated assuming non-proportional odds. It was originally presented in *Generalized Linear Mixed Models*, 2nd edition, Section 14.4 (@stroup_generalized_2024).
-
-The research question answered by this hypothetical study is: Do three different poinsettia varieties differ in their quality ratings? Similar to the first example, quality is a categorical variable collected on an ordinal scale with three levels, from lowest to highest *C* (acceptable, but only just ...), *B* (excellent), and *A* (superior). 
-
-In the study, poinsettias of three different varieties were rated for quality at 12 different growers. At each grower, a variable number of plants from each variety was rated (between 40 and 49, with median 44.5). This constitutes a randomized complete block design, where the experimental unit is the combination of grower and variety. The ANOVA shell for the design follows.
-
-```{r anova shell example 9, echo=FALSE}
-table2 <- data.frame(
-  col1 = c("Grower", "Variety", "Grower &times; Variety", "Total"),
-  col2 = c(11, 2, 22, 35),
-  col3 = c('$$g_j \\text{ i.i.d. } N(0, \\sigma^2_g)$$', '$$\\nu_i$$', '$$gv_{ij} \\text{ i.i.d. } N(0, \\sigma^2_{gv})$$', '')
-)
-
-kable(table2, col.names = NULL,  format = "html") |> 
-  add_header_above(c('Source of variation', 'df', 'Model effect & distribution'), align = "l") |> 
-  row_spec(4, bold = TRUE) |> 
-  kable_styling(full_width = TRUE, position = "center") 
-```
-
-### Statistical Model
-
-We will fit the proportional odds and non-proportional odds cumulative logit GLMMs to this dataset, to illustrate the importance of relaxing the proportional odds assumption.
-
-#### Linear predictors
-
-$$\boldsymbol\eta_{cij} = \eta_{c} + \nu_{ci} + g_{j} + gv_{ij}$$
-
-Here, $\boldsymbol\eta_{cij}$ denotes the *c*th linear predictor ($c = 0, 1$) for the *ij*th grower-variety combination, $\eta_c$ is the intercept for the *c*th linear predictor, $\nu_{ci}$ is the variety effect for the *c*th linear predictor, and $g_j$ and $gv_{ij}$ are the random effects of grower and variety nested within grower, respectively. The key difference between this and the previous model is that now not only the intercept, but also the variety effect, is indexed with *c*. Now, the fixed effect of variety is not the same for each category threshold's linear predictor. It is also possible to relax the proportional odds assumption for the random terms, but in this case we are assuming the effect of grower and variety within grower on each of the thresholds is the same. Only two variance components will be estimated overall, rather than two for each category threshold.
-
-#### Distributions
-
-$$y_{\text{A}, ij}, y_{\text{B}, ij}, y_{\text{C}, ij} | b_{ij} \sim \text{Multinomial}(N_{ij}, \pi_{\text{A}, ij}, \pi_{\text{B}, ij}, \pi_{\text{C}, ij})$$
-
-$$g_j \text{ i.i.d. } N(0, \sigma^2_g)$$
-
-$$gv_{ij} \text{ i.i.d. } N(0, \sigma^2_{gv})$$
-
-Identically to the previous example, for each of the experimental units (grower-variety combinations), the counts of plants in the *ij*th grower-variety combination rated with each of the three quality ratings follows a multinomial distribution with parameter $N_{ij}$ being the total number of plants in the *ij*th grower-variety combination and three $\pi_{c,ij}$ parameters, each one being the probability of the *c*th quality rating class in that grower-variety combination. As before, the three $\pi_{c,ij}$ values must sum to 1.
-
-#### Link function
-
-$$\boldsymbol\eta_{0ij} = \log \Big( \frac {\pi_{\text{A}, ij}} {1 - \pi_{\text{A}, ij}} \Big)$$
-
-$$\boldsymbol\eta_{1ij} = \log \Big( \frac {\pi_{\text{A}, ij} + \pi_{\text{B}, ij}} {1 - (\pi_{\text{A}, ij} + \pi_{\text{B}, ij})} \Big)$$
-
-The link functions have identical forms to those from the proportional odds model.
-
-### Graphical test of the proportional odds assumption
-
-Following is Harrell's graphical test of the proportional odds assumption for the poinsettia quality dataset, presented in tabular and graphical form.
-
-In the R code below, we import the data, and we convert `Grower` and `Variety` to factors, and `Rating` to an ordered factor with `C` as the lowest rating. We reshape the data into long format with one row per individual observation. This will be needed for the Brant-Wald test and for fitting the brms model.
-
-```{r import example 9}
-ex9 <- read.csv('Examples/Example 9/Example9 Data.csv') %>%
-  mutate(across(c(Grower, Variety), factor),
-         Rating = ordered(Rating, levels = c('C', 'B', 'A')))
-
-ex9long <- ex9 %>% 
-  group_by(Grower, Variety) %>%
-  reframe(Rating = rep(Rating, N_Plants)) 
-```
-
-We compute the differences in cumulative log-odds between the C-B and B-A thresholds for each variety separately.
-
-```{r Harrell test example 9}
-po_test_ex9 <- ex9 %>%
-  group_by(Variety) %>%
-  summarize(`Logodds Rating<=C` = qlogis(weighted.mean(Rating <= 'C', w = N_Plants)),
-            `Logodds Rating<=B` = qlogis(weighted.mean(Rating <= 'B', w = N_Plants))) %>%
-  mutate(diff = `Logodds Rating<=B` - `Logodds Rating<=C`)
-```
-
-We see below that the differences in cumulative log-odds between the C-B and B-A thresholds are very different between the three varieties, indicating that the proportional odds assumption is very likely to be inappropriate. The difference is especially small for variety 3, which is a "polarizing" variety: it tended to be rated either negatively (C) or positively (A), with few intermediate (B) ratings. Thus, the difference between the cumulative log-odds at the C-B and B-A thresholds is much smaller than for the other varieties.
-
-```{r, echo=FALSE, fig.height=4, fig.width=4}
-kable(po_test_ex9, col.names = NULL,  format = "html", digits = 3) |> 
-  add_header_above(c('Treatment', 'Log-odds Rating ≤ C', 'Log-odds Rating ≤ B', 'Difference')) |> 
-  kable_styling(full_width = TRUE, position = "center") 
-
-ggplot(po_test_ex9, aes(y = Variety, x = diff)) +
-  geom_point(size = 3) +
-  geom_vline(xintercept = 0, linetype = 'dashed') +
-  labs(x = 'difference in cumulative logits', y = 'variety')
-```
-
-In addition to the visualization recommended by Harrell, here is an alternative and possibly more intuitive visualization showing the highly disproportional odds.
-
-```{r, echo=FALSE, fig.height=4, fig.width=5.5}
-po_test_ex9_long <- po_test_ex9 %>%
-  select(-diff) %>%
-  pivot_longer(starts_with('Logodds'), values_to = 'logodds')
-
-ggplot(po_test_ex9_long, aes(x = Variety, y = logodds)) +
-  geom_line(aes(group = Variety), linetype = 'dashed') +
-  geom_point(aes(color = name), size = 3) +
-  theme(legend.position = 'none') +
-  see::scale_color_okabeito() +
-  scale_x_discrete(name = 'Variety', labels = paste('Variety', 1:3)) +
-  scale_y_continuous(name = 'Log odds') +
-  annotate(geom = 'richtext', x = 1, y = -1.25, label = 'Log odds (Rating &leq; C)', color = palette.colors()[3]) +
-  annotate(geom = 'richtext', x = 1, y = 1, label = 'Log odds (Rating &leq; B)', color = palette.colors()[2]) +
-  geom_richtext(aes(y = (`Logodds Rating<=C` + `Logodds Rating<=B`)/2, label = round(diff, 2)), hjust = c(0.5, 0.5, -0.25), data = po_test_ex9) +
-  labs(caption = 'Log odds ratio between consecutive\nthresholds shown for each variety')
-```
-
-
-### Brant-Wald test of proportional odds assumption
-
-As in the above example, we may also do the Brant-Wald test as implemented in `gofcat::brant.test()`, if a formal test of the null hypothesis of proportional odds is desired. Note that as in the previous example the long form data with one trial per row is needed because `brant.test()` would not give correct results if the `weights` argument were used when fitting the model to the aggregated version of the data. Also note that as before we must fit a simplified version of the model ignoring grower and grower-variety interaction effects.
-
-Unsurprisingly, the Brant-Wald test indicates that the proportional odds assumption with respect to variety is grossly violated, as shown by the huge values of the Chi-squared statistic for both the omnibus test and the individual variety terms.
-
-```{r Brant example 9}
-fit9clm <- clm(
-  Rating ~ Variety,
-  link = 'logit',
-  threshold = 'flexible',
-  data = ex9long
-)
-
-gofcat::brant.test(fit9clm)
-```
-
-### Proportional odds model is inappropriate
-
-Harrell's graphical test and the Brant-Wald test clearly indicate that the proportional odds assumption is not valid for this dataset. In practice, however, a proportional odds model is often fit in inappropriate contexts. Below, we illustrate the lack of fit of the proportional odds model by plotting predictions from the proportional odds model fit to the example dataset side-by-side with the observations. 
-
-Below, a proportional odds model with the appropriate fixed and random effects terms is fit in R using `ordinal::clmm()`. The marginal probabilities of each quality rating for each variety are calculated using the function `emmeans::emmeans()` with the syntax `emmeans(fit, ~ c | g, mode = 'prob')` where `c` is the categorical outcome variable and `g` the fixed effect variable. 
-
-```{r proportional odds clmm example 9}
-fit9clmm_po <- clmm(Rating ~ Variety + (1 | Grower) + (1 | Variety:Grower),
-                 weights = N_Plants,
-                 link = 'logit',
-                 threshold = 'flexible',
-                 data = ex9)
-
-emm_fit9clmm_po <- summary(emmeans(fit9clmm_po, ~ Rating | Variety, mode = 'prob')) %>%
-  mutate(Rating = factor(Rating, labels = c('C', 'B', 'A')))
-```
-
-The predictions, with asymptotic 95% confidence intervals, are plotted alongside the observed proportions for each combination of grower and variety. It is clear that the constraint imposed by the proportional odds model that the effect of variety be the same for the C-B and B-A thresholds is inappropriate for this dataset.
-
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-ex9_summ <- ex9 %>%
-  group_by(Grower, Variety) %>%
-  mutate(p = N_Plants/sum(N_Plants))
-
-ggplot(ex9_summ, aes(x = Rating, color = Rating)) +
-  geom_point(aes(y = p), size = 2, alpha = 0.5, position = position_nudge(x = -0.15)) +
-  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), data = emm_fit9clmm_po, width = 0.2, linewidth = 0.8, position = position_nudge(x = 0.15)) +
-  geom_point(aes(y = prob), data = emm_fit9clmm_po, size = 3, position = position_nudge(x = 0.15)) +
-  facet_wrap(~ Variety, labeller = as_labeller(\(x) paste('Variety', x))) +
-  see::scale_color_okabeito() +
-  theme(
-    legend.position = 'none'
-  ) +
-  labs(y = 'proportion of plants', x = 'rating')
-```
-
-The inappropriateness of the proportional odds model is further shown by the mean class predictions. Similar to the previous example, the rating categories are treated as numerical variables (in this case, C=1, B=2, A=3) and the mean class prediction for each variety is calculated as the weighted mean of the categories, weighted by their marginal probabilities for that variety. Because mean class predictions rely on the assumption of proportional odds, they are nonsensical when the proportional odds assumption is violated, as shown below.
-
-```{r emm mean class example 9}
-emm_fit9clmm_po_meanclass <- summary(emmeans(fit9clmm_po, ~ Variety, mode = 'mean.class'))
-```
-
-```{r, echo=FALSE, fig.height=4, fig.width=4}
-ggplot(emm_fit9clmm_po_meanclass, aes(x = Variety)) +
-  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, linewidth = 0.8) +
-  geom_point(aes(y = mean.class), size = 3) +
-  scale_y_continuous(name = 'mean rating', limits = c(1, 3), breaks = c(1, 2, 3), labels = c('1.0 (C)', '2.0 (B)', '3.0 (A)')) +
-  labs(x = 'variety')
-```
-
-### Frequentist implementation: SAS `PROC NLMIXED`
-
-An implementation of the statistical model is available in SAS. Because `PROC GLIMMIX` does not support relaxing the proportional odds assumption, we use `PROC NLMIXED`. This requires explicitly writing out the equations for the linear predictors and the inverse link functions. Starting values for the parameters must also be provided. In addition, the linear predictor term must be explicitly constrained to be greater than zero. If the term is less than or equal to zero, it is set to a small positive value (1 &times; 10<sup>-8</sup>).
-
-Here, `qpoints=1` in the procedure statement sets the number of quadrature points to 1, meaning that the Laplace approximation is used.
+### Appendix C: Full SAS code and output for non-proportional odds model fit with PROC NLMIXED
 
 ```{sas NLMIXED example 9}
-Data Plant_Ratings;
+data Plant_Ratings;
  input Grower Variety Rating $ N_Plants;
 datalines;
 1 1 A 20
@@ -1009,13 +1470,11 @@ else pi=pi_2;
 run;
 ```
 
-## Frequentist implementation: R TMB
-
-To our knowledge, no "off-the-shelf" Frequentist model fitting package in R currently supports relaxing the proportional odds assumption in a flexible enough context to fit this model. See below for more details on this. However, it is possible to fit the model using the Template Model Builder (TMB). The likelihood is specified similarly to `PROC NLMIXED` but written using a C++ model template. The C++ program is compiled. Following that, an R script is used to put the data into an appropriate format, define starting values for the parameters, and estimate the model. There are also many additional estimates specified: the marginal probabilities of each rating for each variety as well as the same values expressed as log odds, the contrasts for the joint hypothesis tests, and the variance components. Laplace approximation is used as the integration method. Here we use a quasi-Newton method (`BFGS`) for optimization, similar to the `PROC NLMIXED` example. 
+### Appendix D: Full C++ and R code and output for non-proportional odds model fit with Template Model Builder
 
 This is the model written as a C++ template:
 
-```{cpp TMB model example 9, eval = FALSE}
+```{cpp TMB model example 9}
 // ------------------------------------------------------------
 //  Multinomial (3-category) mixed model
 //  Uses TMB (Template Model Builder)
@@ -1130,7 +1589,7 @@ Type objective_function<Type>::operator() ()
 This is the R script used to fit the model. First, the data are put into a list, with Rating, Variety, and Grower formatted as integers. Grower (block index) should be 0-based. Next, the model is compiled and loaded. Initial values for the parameters are defined, matching those specified in `PROC NLMIXED`. The function `MakeADFun()` constructs an objective function that will calculate the negative log-likelihood and its gradient. The `optim()` function is used to minimize the negative log-likelihood, using BFGS, a quasi-Newton technique. The `sdreport()` function is used to calculate standard errors of all the model parameters, including the additional contrasts and estimates specified in the template. The covariance matrix of all the additional estimated quantities is generated using the delta method.
 
 ```{r fit TMB model}
-# ---- 2. Prepare inputs for TMB --------------------------------------------
+# Prepare inputs for TMB 
 data.list <- list(
   N       = nrow(ex9long),
   y       = 4L - as.integer(ex9long$Rating), # This is in the reverse order as I did it for CLMM and Stan (because A=best and C=worst), but if we set it up this way, the TMB output will match the SAS output.
@@ -1138,11 +1597,11 @@ data.list <- list(
   grower  = as.integer(ex9long$Grower) - 1
 )
 
-# ---- 3. Compile C++ model --------------------------------------------------
+# Compile C++ model 
 if (!file.exists("ex9.dll")) compile("ex9.cpp")
 dyn.load(dynlib("ex9"))
 
-# ---- 4. Initial parameter values  ------------------------------------------
+# Initial parameter values 
 Ng <- length(unique(data.list$grower))
 parameters <- list(
   int_0    = -0.5,
@@ -1158,7 +1617,7 @@ parameters <- list(
   bt2 = rep(0, Ng),
   bt3 = rep(0, Ng)
 )
-# ---- 5. Build AD model ----------------------------------------------------
+# Build AD model 
 obj <- MakeADFun(
   data = data.list,
   parameters = parameters,
@@ -1167,37 +1626,17 @@ obj <- MakeADFun(
   silent = TRUE
 )
 
-# ---- 6. Optimize ----------------------------------------------------------
+# Optimize 
 opt <- optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = 'BFGS')
 
-# ---- 7. Standard errors and post‑hoc estimates ----------------------------
-report <- sdreport(obj, bias.correct = FALSE)   # contains ADREPORT results
+# Standard errors and post‑hoc estimates
+report <- sdreport(obj, bias.correct = FALSE) # contains ADREPORT results
 est <- summary(report)
 ```
 
-The following tables include the eight parameter estimates (two intercepts, four category-specific effects by variety, and two random effect standard deviations) and additional estimated quantities. The estimates and standard errors are very close to those obtained from `PROC NLMIXED`. A minor difference from `PROC NLMIXED` is that the random effect standard deviations are estimated on the log scale.
+### Appendix E: Using TMB to obtain F-tests equivalent to SAS PROC NLMIXED output
 
-```{r estimate tables TMB model, echo = FALSE}
-kable(as.data.frame(est[1:8,]), caption = 'Parameter estimates from non-proportional odds model: R TMB', digits = 4) |>
-  kable_styling(full_width = TRUE, position = "center")
-
-est_names <- c("sdb * sdb", "sdbt * sdbt",
-               "1.0/(1.0+exp(-(int_0 + tau_01)))", 
-               "1.0/(1.0+exp(-(int_1 + tau_11))) - 1.0/(1.0+exp(-(int_0 + tau_01)))", 
-               "1.0 - 1.0/(1.0+exp(-(int_1 + tau_11)))", "1.0/(1.0+exp(-(int_0 + tau_02)))", 
-               "1.0/(1.0+exp(-(int_1 + tau_12))) - 1.0/(1.0+exp(-(int_0 + tau_02)))", 
-               "1.0 - 1.0/(1.0+exp(-(int_1 + tau_12)))", "1.0/(1.0+exp(-int_0))", 
-               "1.0/(1.0+exp(-int_1)) - 1.0/(1.0+exp(-int_0))", "1.0 - 1.0/(1.0+exp(-int_1))")
-
-additional_estimates <- as.data.frame(est[est_names, ])
-row.names(additional_estimates) <- c('block (grower) variance', 'block by treatment (grower by variety) variance', 
-                                     c(outer(c('A','B','C'), 1:3, \(rating, variety) paste('probability of rating =', rating, 'for variety', variety))))
-
-kable(additional_estimates, caption = 'Additional estimates from non-proportional odds model: R TMB', digits = 4) |>
-  kable_styling(full_width = TRUE, position = "center")
-```
-
-It is possible to obtain the same contrasts as in `SAS PROC NLMIXED`, in which F-tests are used to jointly test the null hypotheses that (1) the variety effects for each category threshold are not different from one another and (2) the individual category-specific treatment effects are all zero. We extract the covariance matrix that was generated for the estimated quantities using the delta method and generate an F-statistic using the estimates of the contrasts and their covariance matrix. Following `PROC NLMIXED`, the numerator degrees of freedom is the number of contrasts, and the denominator degrees of freedom is the number of parameters in the model.
+For the non-proportional-odds model, it is possible to post-process the output from the R TMB model to obtain the same contrasts as in `SAS PROC NLMIXED`, in which F-tests are used to jointly test the null hypotheses that (1) the variety effects for each category threshold are not different from one another and (2) the individual category-specific treatment effects are all zero. We extract the covariance matrix that was generated for the estimated quantities using the delta method and generate an F-statistic using the estimates of the contrasts and their covariance matrix. Following `PROC NLMIXED`, the numerator degrees of freedom is the number of contrasts, and the denominator degrees of freedom is the number of parameters in the model.
 
 ```{r contrast tables TMB model}
 contrast_Ftest_likeSAS <- function(report, contrast_names) {
@@ -1220,141 +1659,15 @@ contrast_df <- as.data.frame(rbind(
 ```
 
 
-```{r contrast kable TMB model, echo = FALSE}
+```{r contrast kable TMB model}
+#| echo: false
 kable(contrast_df, caption = 'Contrasts from non-proportional odds model: R TMB',
       col.names = c('numerator df', 'denominator df', 'F-statistic', 'p-value'),
       digits = c(0, 0, 2, 7)) |>
   kable_styling(full_width = TRUE, position = "center")
 ```
 
-
-### Bayesian implementation: Stan via R `brms::brm`
-
-A proportional odds model, which we already know to be inappropriate, may be fit using Stan, via the R interface `brms::brm()`, with similar syntax to the previous `brms` example. The model formula specifies a fixed effect for variety, a random intercept for each grower, and a random intercept for variety nested within grower, with no covariance between the random effects. The cumulative response family with logit link and flexible category thresholds is specified. Weakly informative prior distributions are assumed:
-
-- $\eta \sim N(0, 10)$
-- $\nu \sim N(0, 10)$
-- $\sigma_g \sim Gamma(1, 1)$
-- $\sigma_{gv} \sim Gamma(1, 1)$
-
-The HMC algorithm is run using four Markov chains, with 1000 discarded warmup iterations and 1000 sampling iterations per chain, for a total of 4000 samples from the joint posterior distribution. 
-
-Note that the control parameter `adapt_delta` is set to 0.95, higher than the default value of 0.8. This reduces the sampler's step size, making it explore the posterior slightly less efficiently, but eliminating the divergent transitions. 
-
-```{r brm fit PO example 9, results='hide', message = FALSE}
-fit9brm_po <- brm(
-  Rating ~ Variety + (1 | Grower) + (1 | Variety:Grower),
-  family = cumulative(link = 'logit', threshold = 'flexible'),
-  prior = c(
-    prior(normal(0, 10), class = Intercept),
-    prior(normal(0, 10), class = b),
-    prior(gamma(1, 1), class = sd)
-  ),
-  data = ex9long,
-  chains = 4, cores = 4, iter = 2000, warmup = 1000, seed = 130,
-  control = list(adapt_delta = 0.95)
-)
-```
-
-The non-proportional odds model has identical syntax except for the fixed effect term in the model formula: there, `cs(Variety)` indicates category-specific effects on Variety. This relaxes the proportional odds assumption by allowing the two linear predictors to have different variety effects. 
-
-```{r brm fit nonPO example 9, warning=FALSE, results='hide', message = FALSE}
-fit9brm_nonpo <- brm(
-  Rating ~ cs(Variety) + (1 | Grower) + (1 | Variety:Grower),
-  family = cumulative(link = 'logit', threshold = 'flexible'),
-  prior = c(
-    prior(normal(0, 10), class = Intercept),
-    prior(normal(0, 10), class = b),
-    prior(gamma(1, 1), class = sd)
-  ),
-  data = ex9long,
-  chains = 4, cores = 4, iter = 2000, warmup = 1000, seed = 130,
-  control = list(adapt_delta = 0.95)
-)
-```
-
-Posterior predictive check plots for each model are a way to graphically check whether the proportional odds assumption is met. The bars (*y*) are the observed rating counts for each variety, and the dots with error bars (*y<sub>rep</sub>*) are the median and range of 10 draws from the posterior predictive distribution. It is clear that relaxing the proportional odds assumption is necessary to get agreement between the observations and the model predictions.
-
-```{r PP check example 9, echo=FALSE, warning=FALSE, message = FALSE, fig.height=4, fig.width=6}
-pp_check(fit9brm_po, type = 'bars_grouped', group = 'Variety') + 
-  scale_x_continuous(breaks = 1:3, labels = LETTERS[1:3], name = 'Rating') + 
-  ggtitle('Proportional odds model')
-pp_check(fit9brm_nonpo, type = 'bars_grouped', group = 'Variety') + 
-  scale_x_continuous(breaks = 1:3, labels = LETTERS[1:3], name = 'Rating') + 
-  ggtitle('Non-proportional odds model')
-```
-
-Leave-one-out cross-validation comparison between the two models is another way to diagnose whether the proportional odds assumption is met. Expected log pointwise posterior density difference is very large, indicating that relaxing the proportional odds assumption results in much better model performance.
-
-```{r LOO example 9, warning=FALSE}
-loo(fit9brm_po, fit9brm_nonpo, compare = TRUE)
-```
-
-### Comparison of estimates
-
-Below is a graphical comparison of the estimates for the Frequentist implementations in SAS `PROC NLMIXED` and R `TMB` versus the Stan `brms::brm()` Bayesian implementation. In all cases these are marginal estimates not conditioned on the random effects. The R and SAS Frequentist implementations are nearly identical in their point estimates. The 95% confidence intervals differ for the following reason. In both cases, confidence intervals were constructed using the number of parameters in the model (8) as the degrees of freedom. However, the SAS confidence intervals were constructed by simply multiplying the standard error by the corresponding quantile of the *t*-distribution and adding and subtracting from the point estimate on the probability scale. This leads to intervals that are symmetrical on the probability scale but asymmetrical on the log-odds scale, and which may overlap 0 or 1. In fact here several of the intervals do overlap 0. We constructed the confidence intervals for the `TMB` estimates in a more appropriate manner, by obtaining the confidence interval endpoints on the log-odds scale and inverse transforming to the probability scale.
-
-The same reasons discussed for the previous example apply to explain why there are differences between the Frequentist and Bayesian estimates and their 95% confidence / credible intervals. (Note that the 95% confidence intervals constructed on the log scale and inverse transformed agree more closely with the Bayesian credible intervals.) Regardless of those minor differences, all models fit the data well due to the flexibility gained by relaxing the proportional odds assumption.
-
-```{r posterior pred example 9, warning=FALSE}
-epred_nonpo <- posterior_epred(fit9brm_nonpo, newdata = data.frame(Variety = c('1','2','3')), re_formula = ~ 0)
-
-ex9brmsest <- apply(epred_nonpo, 2:3, quantile, probs = c(0.5, 0.025, 0.975)) %>%
-  reshape2::melt(varnames = c('quantile', 'Variety', 'Rating')) %>% 
-  reshape2::dcast(Variety + Rating ~ quantile)
-
-# Construct TMB confidence intervals on the log-odds scale and inverse transform 
-ex9tmbest <- as.data.frame(est[66:74, ]) %>%
-  mutate(Rating = rep(c('A', 'B', 'C'), 3),
-         Variety = rep(1:3, each = 3),
-         Lower = Estimate - `Std. Error` * qt(0.975, df = 8),
-         Upper = Estimate + `Std. Error` * qt(0.975, df = 8),
-         across(c(Estimate, Lower, Upper), plogis))
-
-```
-
-```{r ex9 comparison fig, echo = FALSE, fig.height=5, fig.width=7}
-ex9sasest <- read.csv('Examples/Example 9/SASestimatesex9.csv') %>%
-  filter(grepl('^prob', Label)) %>%
-  mutate(Rating = rep(c('A', 'B', 'C'), 3),
-         Variety = rep(1:3, each = 3))
-
-ex9allest <- bind_rows(
-  cbind(method = 'Stan (brms:brm)', ex9brmsest) %>% rename(Estimate = `50%`, Lower = `2.5%`, Upper = `97.5%`),
-  cbind(method = 'SAS (PROC NLMIXED)**', ex9sasest),
-  cbind(method = 'R (TMB)*', ex9tmbest)
-)
-
-ggplot(ex9allest, aes(x = Rating, y = Estimate, group = method)) +
-  geom_errorbar(aes(ymin = Lower, ymax = Upper), position = position_dodge(width = 0.5), width = 0.25) +
-  geom_point(aes(color = method), size = 2, position = position_dodge(width = 0.5)) +
-  facet_wrap(~ Variety, labeller = as_labeller(\(x) paste('Variety', x))) +  see::scale_color_okabeito(order = c(6, 4, 5)) +
-  theme(legend.position = 'bottom') +
-  labs(y = 'marginal probability', x = 'rating',
-       caption = '*95% CI constructed on the log-odds scale and inverse-transformed\n**95% CI constructed on the probability scale')
-```
-
-### Post-fitting tests of proportional odds assumption
-
-There are other tests of the proportional odds assumption (Stroup et al. 2014) that can be done after model fitting. The first approach is model comparison: after fitting the model that relaxes the proportional odds assumption, we may compare fit statistics between the models with and without the assumption. Of course, this is not possible if one of the models is not implemented in a particular software platform. For SAS users, Stroup et al. recommend fitting the generalized logit model in `PROC GLIMMIX`; although this model assumes unordered categories, it has the same linear predictors as the non-proportional odds model with ordered categories. The fit statistics for this model can be compared to the proportional-odds fit statistics from `PROC GLIMMIX`; if the proportional odds model is preferred, the user may avoid the lengthy process of writing `PROC NLMIXED` code.
-
-The second approach is to do formal hypothesis tests of the null hypothesis that $v_{0i} = v_{1i}$ for each of the varieties indexed with $i$. In this particular case because there are only two category thresholds, there is only one test per group (variety), but there would be more tests per group when there are four or more categories. A similar test could be done to compare random effect variances between category thresholds, if the proportional odds assumption is also being relaxed for random terms in the model. Rejection of any of the null hypotheses would be evidence that the proportional odds assumption is violated, justifying fitting the model that relaxes the assumption.
-
-### Discussion of model implementations in software
-
-To our knowledge there is no satisfactory Frequentist implementation of the above model currently available in any R package, that does not require the user to fully specify the likelihood from scratch, as was necessary in both SAS `PROC NLMIXED` and R `TMB`. Why not? To accommodate the violation of the proportional odds assumption, the model must include **category-specific effects**, sometimes referred to as **nominal effects**. In addition, the model must also include **multiple random effects**. The best-known general-purpose Frequentist GLMM packages in R (lme4 and glmmTMB) do not support cumulative logistic models at all, at least not without extensive customization similar to what was done in PROC NLMIXED for this example. 
-
-We searched extensively for other R packages that might implement the model. The R package ordinal implements cumulative logistic mixed models. It implements cumulative logistic mixed models with category-specific effects (i.e., allowing violation of proportional odds) in the `clmm2()` function, and it implements cumulative logistic mixed models with multiple random effects in the `clmm()` function. Unfortunately, though, both category-specific effects and multiple random effects are not implemented within the same function. Furthermore, the package is not under active development, so it is unlikely that these features will be combined. 
-
-There are a few other R packages that initially showed some promise, including mixcat, mclogit, and mgcv. The mixcat and mclogit packages have relatively poor documentation. We were unable to reproduce the model in either of them. The mixcat package in particular lacks most of the standard R GLMM methods like `predict()` and `simulate()`. Therefore even if the model can be fit with mixcat, it would not be integrated with packages such as emmeans and DHARMa, making it not very useful. In mgcv, a GAMM fitting package, there is a multinomial response family and the ability to fit random effects using the spline syntax. However, we were unable to reproduce the desired model because the `multinom()` family in mgcv is an unordered multinomial, rather than an ordered multinomial with relaxation of proportional odds assumption for the fixed effects. The `ocat()` (ordered categorical) family in mgcv also differs in important respects from our desired model.
-
-#### Frequentist implementations: paths forward
-
-It is unlikely that additional features will be added to SAS `PROC GLIMMIX`, thus for the foreseeable future SAS users that want to fit a non-proportional odds multinomial GLMM will need to use `PROC NLMIXED` and fully specify the likelihood "by hand." While this is a satisfactory solution for savvy users, it is a relatively error-prone process that may be daunting to inexperienced users.
-
-In R, the situation is similar. Few users are willing or able to fully specify the likelihood, as required by TMB. However it is possible to create user-defined response families for GLMMs using a package such as glmmTMB, glmmADMB, or GLMMadaptive. The multinomial could be added, which would allow constructing a cumulative logit model with category-specific effects and nested random effects. The Bayesian solutions described above, whether it be the off-the-shelf version provided by brms or a Stan program with the likelihood fully specified by the user similarly to `PROC NLMIXED`, are more than suitable. They result in similar coefficient estimates to the maximum likelihood methods when weakly informative prior distributions are used. However, if a Frequentist implementation in R is desired that does not require constructing a fully customized likelihood, the most promising avenue is to add that functionality to glmmTMB or another general-purpose GLMM package. The above TMB template could be used as a starting point, if it is modified into a more general version that implements the matrix algebra instead of manipulating individual scalar coefficients.
-
-### Appendix: Non-proportional odds model implemented in Stan
+### Appendix F: Non-proportional odds model implemented in Stan
 
 The Bayesian implementation using `brm()` above uses the pre-defined multinomial response distribution and category-specific effect syntax. However, users interested in the Bayesian implementation of the non-proportional odds model may be interested in a direct translation of the likelihood statements of the SAS `PROC NLMIXED` model into the Stan language.
 
@@ -1447,9 +1760,10 @@ generated quantities {
 }
 ```
 
-To fit the model, first set up the input data as a list. The rating data must be input in long format as a three-column matrix with two 0s and one 1 in each row.
+To fit the model, first set up the input data as a list. The rating data must be input in long format as a three-column matrix with two 0s and one 1 in each row. Next, compile and sample the model.
 
-```{r, eval = FALSE}
+```{r set up data for Stan}
+#| eval: false
 # Generate nx3 matrix of outcomes (ratings) for multinomial distribution
 Rating_mat <- matrix(0, nrow = nrow(ex9long), ncol = 3)
 for (i in 1:nrow(ex9long)) Rating_mat[i, as.integer(ex9long$Rating[i])] <- 1
@@ -1462,17 +1776,9 @@ ex9standata_mult <- with(ex9long, list(
   Variety = Variety, 
   Rating = Rating_mat
 ))
-```
 
-Compile Stan model.
-
-```{r, eval = FALSE}
 ex9stanmod_multinomial <- cmdstan_model("ex9multinomial.stan")
-```
 
-Sample Stan model.
-
-```{r, eval = FALSE}
 ex9stanfit_multinomial <- ex9stanmod_multinomial$sample(data = ex9standata_mult, seed = 111, chains = 4, parallel_chains = 4, iter_warmup = 1000, iter_sampling = 1000)
 
 ex9stanfit_multinomial$save_object(file = "Examples/Example 9/ex9stanfit_multinomial.rds")
@@ -1480,7 +1786,7 @@ ex9stanfit_multinomial$save_object(file = "Examples/Example 9/ex9stanfit_multino
 
 Generate summary of desired quantities. They are very similar to the estimates from `brms::brm()`.
 
-```{r}
+```{r generate Stan summary}
 ex9stanfit_multinomial <- readRDS("Examples/Example 9/ex9stanfit_multinomial.rds")
 
 ex9stanfit_summary <- ex9stanfit_multinomial$summary(
@@ -1489,7 +1795,8 @@ ex9stanfit_summary <- ex9stanfit_multinomial$summary(
 )
 ```
 
-```{r, echo=FALSE}
+```{r display Stan summary}
+#| echo: false
 ex9stanfit_summary |>
   mutate(variable = c(c(outer(c('Prob(A) Variety', 'Prob(B) Variety', 'Prob(C) Variety'), 1:3, paste)), 'grower variance', 'grower:variety variance')) |>
 kable(digits = 3) |>
