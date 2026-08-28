@@ -1,0 +1,5 @@
+CovParm,Subject,Estimate,StdErr,method
+Intercept,blk,0.1181,0.07648,Laplace
+Intercept,blk,0.1181,0.07648,Quadrat
+Intercept,blk,0.1167,0.07493,MSPL
+Intercept,blk,0.1089,0.07072,MMPL
