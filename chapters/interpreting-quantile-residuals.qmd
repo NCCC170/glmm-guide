@@ -5,13 +5,6 @@ bibliography: references.bib
 reference-location: margin
 code: 
   echo: true
-format: 
-  html:
-    embed-resources: true
-  pdf:
-    colorlinks: true
-    toc: true
-    number-sections: true
 ---
 
 ```{r}
