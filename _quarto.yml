@@ -45,6 +45,12 @@ website:
             text: "R solution"
           - href: chapters/example-01-sas.qmd
             text: "SAS solution"
+      - href: chapters/examples-08-09.qmd
+        text: "Examples 8 & 9: Multinomial GLMMs"
+      - href: chatpers/examples-10-11.qmd
+        text: "Examples 10 & 11: Precision and Power Analysis"
+      - href: chapters/interpreting-quantile-residuals.qmd
+        text: "Randomized Quantile Residuals"
 
 
 format:
