@@ -125,11 +125,7 @@ library(ordinal)
 library(SASmarkdown)
 library(TMB)
 
-<<<<<<<< HEAD:chapters/example_08_09.qmd
 ex8 <- read.csv('data/example_08.csv') %>%
-========
-ex8 <- read.csv('Examples/Example 8/Example8 Data.csv') %>%
->>>>>>>> 1159a86de1666c0bceadbca45ecfea59b95a3515:chapters/examples-8-9.qmd
   mutate(across(c(Block, Trt), factor),
          Rating = ordered(factor(Rating, levels = c('slight', 'modera', 'severe'))))
 ```
@@ -522,11 +518,7 @@ The R and SAS Frequentist estimates have identical point estimates. The 95% conf
 
 ```{r load example 8 estimates}
 #| echo: false
-<<<<<<<< HEAD:chapters/example_08_09.qmd
 ex8sasest <- read.csv('data/example_08_sasnlmeansoutput.csv') %>%
-========
-ex8sasest <- read.csv('Examples/Example 8/ex8sasnlmeans.csv') %>%
->>>>>>>> 1159a86de1666c0bceadbca45ecfea59b95a3515:chapters/examples-8-9.qmd
   separate(Label, into = c('Rating', 'Trt'), sep = ' ') %>%
   mutate(Rating = gsub('P(', '', Rating, fixed = TRUE) %>% factor(levels = c('slight', 'moderate', 'severe')),
          Trt = stringr::str_extract(Trt, '[0-9]'))
@@ -617,11 +609,7 @@ Following is Harrell's graphical test (@harrell_2022) of the proportional odds a
 In the R code below, we import the data, and we convert `Grower` and `Variety` to factors, and `Rating` to an ordered factor with `C` as the lowest rating. We reshape the data into long format with one row per individual observation. This will be needed for the Brant-Wald test and for fitting the brms model.
 
 ```{r import example 9}
-<<<<<<<< HEAD:chapters/example_08_09.qmd
 ex9 <- read.csv('data/example_09.csv') %>%
-========
-ex9 <- read.csv('Examples/Example 9/Example9 Data.csv') %>%
->>>>>>>> 1159a86de1666c0bceadbca45ecfea59b95a3515:chapters/examples-8-9.qmd
   mutate(across(c(Grower, Variety), factor),
          Rating = ordered(Rating, levels = c('C', 'B', 'A')))
 
@@ -861,9 +849,7 @@ The following tables include the eight parameter estimates (two intercepts, four
 
 ```{r estimate tables TMB model}
 #| echo: false
-<<<<<<<< HEAD:chapters/example_08_09.qmd
 load(file = 'data/example_09_TMBoutput.RData')
-========
 
 # Prepare inputs for TMB 
 data.list <- list(
@@ -1030,11 +1016,7 @@ ex9tmbest <- as.data.frame(est[66:74, ]) %>%
 #| echo: false
 #| fig-height: 5
 #| fig-width: 7
-<<<<<<<< HEAD:chapters/example_08_09.qmd
 ex9sasest <- read.csv('data/example_09_sasestimateoutput.csv') %>%
-========
-ex9sasest <- read.csv('Examples/Example 9/SASestimatesex9.csv') %>%
->>>>>>>> 1159a86de1666c0bceadbca45ecfea59b95a3515:chapters/examples-8-9.qmd
   filter(grepl('^prob', Label)) %>%
   mutate(Rating = rep(c('A', 'B', 'C'), 3),
          Variety = rep(1:3, each = 3))
@@ -1297,13 +1279,8 @@ nagq_var_table <- data.frame(
 
 ex8_r_coeff_table <- rbind(nagq_coeff_table, nagq_var_table)
 
-<<<<<<<< HEAD:chapters/example_08_09.qmd
 ex8_sas_variances <- read.csv('data/example_08_sasvarianceoutput.csv')
 ex8_sas_fixedeffects <- read.csv('data/example_08_sasfixedeffectoutput.csv')
-========
-ex8_sas_variances <- read.csv('C:/Users/Quentin.Read/onedrive_usda/GLMM_project/ex8sasvariance_allmethods.csv')
-ex8_sas_fixedeffects <- read.csv('C:/Users/Quentin.Read/onedrive_usda/GLMM_project/ex8sasfixedeffects_allmethods.csv')
->>>>>>>> 1159a86de1666c0bceadbca45ecfea59b95a3515:chapters/examples-8-9.qmd
 
 ex8_sas_coeff_table <- cbind(platform = 'SAS PROC GLIMMIX', 
                              rbind(
@@ -1614,10 +1591,7 @@ Type objective_function<Type>::operator() ()
 This is the R script used to fit the model. First, the data are put into a list, with Rating, Variety, and Grower formatted as integers. Grower (block index) should be 0-based. Next, the model is compiled and loaded. Initial values for the parameters are defined, matching those specified in `PROC NLMIXED`. The function `MakeADFun()` constructs an objective function that will calculate the negative log-likelihood and its gradient. The `optim()` function is used to minimize the negative log-likelihood, using BFGS, a quasi-Newton technique. The `sdreport()` function is used to calculate standard errors of all the model parameters, including the additional contrasts and estimates specified in the template. The covariance matrix of all the additional estimated quantities is generated using the delta method.
 
 ```{r fit TMB model}
-<<<<<<<< HEAD:chapters/example_08_09.qmd
 #| eval: false
-========
->>>>>>>> 1159a86de1666c0bceadbca45ecfea59b95a3515:chapters/examples-8-9.qmd
 # Prepare inputs for TMB 
 data.list <- list(
   N       = nrow(ex9long),
@@ -1661,11 +1635,8 @@ opt <- optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = 'BFGS')
 # Standard errors and post‑hoc estimates
 report <- sdreport(obj, bias.correct = FALSE) # contains ADREPORT results
 est <- summary(report)
-<<<<<<<< HEAD:chapters/example_08_09.qmd
 
 save(report, est, file = 'data/example_09_TMBoutput.RData')
-========
->>>>>>>> 1159a86de1666c0bceadbca45ecfea59b95a3515:chapters/examples-8-9.qmd
 ```
 
 ### Appendix E: Using TMB to obtain F-tests equivalent to SAS PROC NLMIXED output
@@ -1815,21 +1786,13 @@ ex9stanmod_multinomial <- cmdstan_model("ex9multinomial.stan")
 
 ex9stanfit_multinomial <- ex9stanmod_multinomial$sample(data = ex9standata_mult, seed = 111, chains = 4, parallel_chains = 4, iter_warmup = 1000, iter_sampling = 1000)
 
-<<<<<<<< HEAD:chapters/example_08_09.qmd
 ex9stanfit_multinomial$save_object(file = "data/example_09_stanfitmultinomial.rds")
-========
-ex9stanfit_multinomial$save_object(file = "Examples/Example 9/ex9stanfit_multinomial.rds")
->>>>>>>> 1159a86de1666c0bceadbca45ecfea59b95a3515:chapters/examples-8-9.qmd
 ```
 
 Generate summary of desired quantities. They are very similar to the estimates from `brms::brm()`.
 
 ```{r generate Stan summary}
-<<<<<<<< HEAD:chapters/example_08_09.qmd
 ex9stanfit_multinomial <- readRDS("data/example_09_stanfitmultinomial.rds")
-========
-ex9stanfit_multinomial <- readRDS("Examples/Example 9/ex9stanfit_multinomial.rds")
->>>>>>>> 1159a86de1666c0bceadbca45ecfea59b95a3515:chapters/examples-8-9.qmd
 
 ex9stanfit_summary <- ex9stanfit_multinomial$summary(
   variables = c('pAv1', 'pBv1', 'pCv1', 'pAv2', 'pBv2', 'pCv2', 'pAv3', 'pBv3', 'pCv3', 'sd_g', 'sd_gv'), 
