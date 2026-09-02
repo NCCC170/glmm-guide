@@ -851,51 +851,6 @@ The following tables include the eight parameter estimates (two intercepts, four
 #| echo: false
 load(file = 'data/example_09_TMBoutput.RData')
 
-# Prepare inputs for TMB 
-data.list <- list(
-  N       = nrow(ex9long),
-  y       = 4L - as.integer(ex9long$Rating), # This is in the reverse order as I did it for CLMM and Stan (because A=best and C=worst), but if we set it up this way, the TMB output will match the SAS output.
-  variety = as.integer(ex9long$Variety),
-  grower  = as.integer(ex9long$Grower) - 1
-)
-
-# Compile C++ model 
-if (!file.exists("ex9.dll")) compile("ex9.cpp")
-dyn.load(dynlib("ex9"))
-
-# Initial parameter values 
-Ng <- length(unique(data.list$grower))
-parameters <- list(
-  int_0    = -0.5,
-  int_1    =  0.5,
-  tau_01   =  0,
-  tau_11   =  0,
-  tau_02   =  0,
-  tau_12   =  0,
-  log_sdb  = log(0.5),
-  log_sdbt = log(0.25),
-  blk = rep(0, Ng),
-  bt1 = rep(0, Ng),
-  bt2 = rep(0, Ng),
-  bt3 = rep(0, Ng)
-)
-# Build AD model 
-obj <- MakeADFun(
-  data = data.list,
-  parameters = parameters,
-  random = c("blk", "bt1", "bt2", "bt3"),
-  DLL = "ex9",
-  silent = TRUE
-)
-
-# Optimize 
-opt <- optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = 'BFGS')
-
-# Standard errors and post‑hoc estimates
-report <- sdreport(obj, bias.correct = FALSE) # contains ADREPORT results
-est <- summary(report)
->>>>>>>> 1159a86de1666c0bceadbca45ecfea59b95a3515:chapters/examples-8-9.qmd
-
 kable(as.data.frame(est[1:8,]), caption = 'Parameter estimates from non-proportional odds model: R TMB', digits = 4) |>
   kable_styling(full_width = TRUE, position = "center")
 
