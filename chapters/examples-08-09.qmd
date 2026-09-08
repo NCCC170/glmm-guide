@@ -1,7 +1,7 @@
 ---
 title: "Example 8 & 9: Multinomial GLMMs with and without proportional odds"
 author: "Quentin D. Read, Bruce A. Craig, Philip M. Dixon, and Walter W. Stroup"
-bibliography: references.bib
+bibliography: ../references.bib
 reference-location: margin
 format:
   html:
@@ -104,7 +104,7 @@ The cumulative multinomial probabilities are converted to the log-odds or logit 
 
 ### Graphical test of proportional odds assumption
 
-There are several different ways to test the proportional odds assumption. The following graphical method was developed by Harrell (@harrell_regression_2015) and later expanded upon [using a hybrid Bayesian/frequentist approach](https://www.fharrell.com/post/impactpo/) (@harrell_2002). An example of the test can be found in [UCLA Statistics' tutorial on ordinal logistic regression](https://stats.oarc.ucla.edu/r/dae/ordinal-logistic-regression/) (@ordinal_UCLA). This test is done before fitting the multinomial cumulative logit model. 
+There are several different ways to test the proportional odds assumption. The following graphical method was developed by Harrell (@harrell_regression_2015) and later expanded upon [using a hybrid Bayesian/frequentist approach](https://www.fharrell.com/post/impactpo/) (@harrell_2022). An example of the test can be found in [UCLA Statistics' tutorial on ordinal logistic regression](https://stats.oarc.ucla.edu/r/dae/ordinal-logistic-regression/) (@ordinal_UCLA). This test is done before fitting the multinomial cumulative logit model. 
 
 To do Harrell's graphical test, we use the raw data to calculate the difference in the observed cumulative log odds of successive categories within each group. If, for each category threshold, the differences between the log-odds are roughly similar across all the groups, this indicates that each group's effect on the log-odds is roughly similar regardless of threshold. If this is the case, then the proportional odds assumption is tenable. Put informally, proportional odds means that we can make statements like "treatment A is associated with 50% higher odds of being in a greater category than treatment B" because the effects of each treatment don't depend on exactly which ordinal category is being considered.
 
@@ -125,7 +125,7 @@ library(ordinal)
 library(SASmarkdown)
 library(TMB)
 
-ex8 <- read.csv('data/example_08.csv') %>%
+ex8 <- read.csv('../data/example_08.csv') %>%
   mutate(across(c(Block, Trt), factor),
          Rating = ordered(factor(Rating, levels = c('slight', 'modera', 'severe'))))
 ```
@@ -518,7 +518,7 @@ The R and SAS Frequentist estimates have identical point estimates. The 95% conf
 
 ```{r load example 8 estimates}
 #| echo: false
-ex8sasest <- read.csv('data/example_08_sasnlmeansoutput.csv') %>%
+ex8sasest <- read.csv('../data/example_08_sasnlmeansoutput.csv') %>%
   separate(Label, into = c('Rating', 'Trt'), sep = ' ') %>%
   mutate(Rating = gsub('P(', '', Rating, fixed = TRUE) %>% factor(levels = c('slight', 'moderate', 'severe')),
          Trt = stringr::str_extract(Trt, '[0-9]'))
@@ -609,7 +609,7 @@ Following is Harrell's graphical test (@harrell_2022) of the proportional odds a
 In the R code below, we import the data, and we convert `Grower` and `Variety` to factors, and `Rating` to an ordered factor with `C` as the lowest rating. We reshape the data into long format with one row per individual observation. This will be needed for the Brant-Wald test and for fitting the brms model.
 
 ```{r import example 9}
-ex9 <- read.csv('data/example_09.csv') %>%
+ex9 <- read.csv('../data/example_09.csv') %>%
   mutate(across(c(Grower, Variety), factor),
          Rating = ordered(Rating, levels = c('C', 'B', 'A')))
 
@@ -971,7 +971,7 @@ ex9tmbest <- as.data.frame(est[66:74, ]) %>%
 #| echo: false
 #| fig-height: 5
 #| fig-width: 7
-ex9sasest <- read.csv('data/example_09_sasestimateoutput.csv') %>%
+ex9sasest <- read.csv('../data/example_09_sasestimateoutput.csv') %>%
   filter(grepl('^prob', Label)) %>%
   mutate(Rating = rep(c('A', 'B', 'C'), 3),
          Variety = rep(1:3, each = 3))
@@ -1234,8 +1234,8 @@ nagq_var_table <- data.frame(
 
 ex8_r_coeff_table <- rbind(nagq_coeff_table, nagq_var_table)
 
-ex8_sas_variances <- read.csv('data/example_08_sasvarianceoutput.csv')
-ex8_sas_fixedeffects <- read.csv('data/example_08_sasfixedeffectoutput.csv')
+ex8_sas_variances <- read.csv('../data/example_08_sasvarianceoutput.csv')
+ex8_sas_fixedeffects <- read.csv('../data/example_08_sasfixedeffectoutput.csv')
 
 ex8_sas_coeff_table <- cbind(platform = 'SAS PROC GLIMMIX', 
                              rbind(
@@ -1741,13 +1741,13 @@ ex9stanmod_multinomial <- cmdstan_model("ex9multinomial.stan")
 
 ex9stanfit_multinomial <- ex9stanmod_multinomial$sample(data = ex9standata_mult, seed = 111, chains = 4, parallel_chains = 4, iter_warmup = 1000, iter_sampling = 1000)
 
-ex9stanfit_multinomial$save_object(file = "data/example_09_stanfitmultinomial.rds")
+ex9stanfit_multinomial$save_object(file = "../data/example_09_stanfitmultinomial.rds")
 ```
 
 Generate summary of desired quantities. They are very similar to the estimates from `brms::brm()`.
 
 ```{r generate Stan summary}
-ex9stanfit_multinomial <- readRDS("data/example_09_stanfitmultinomial.rds")
+ex9stanfit_multinomial <- readRDS("../data/example_09_stanfitmultinomial.rds")
 
 ex9stanfit_summary <- ex9stanfit_multinomial$summary(
   variables = c('pAv1', 'pBv1', 'pCv1', 'pAv2', 'pBv2', 'pCv2', 'pAv3', 'pBv3', 'pCv3', 'sd_g', 'sd_gv'), 

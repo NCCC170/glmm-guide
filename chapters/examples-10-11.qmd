@@ -1,7 +1,7 @@
 ---
 title: "Examples 10 and 11: Mixed Models-Based Precision and Power Analyses for Design Comparisons Using `PROC GLIMMIX` and `glmmTMB` + `emmeans`"
 author: "????"
-bibliography: references.bib
+bibliography: ../references.bib
 editor: 
   markdown: 
     wrap: 72
@@ -2499,6 +2499,7 @@ This simulation can take some time with the full 10000 simulations.
 :::
 
 ```{r}
+#| label: powersims
 powerSimulations <- function(model, nsims = 10000, seed = 42){
  sims <- simulate(model, nsims, seed)
  dataset <- cbind(model$frame, sims)
@@ -2542,13 +2543,13 @@ powerSimulations <- function(model, nsims = 10000, seed = 42){
 }
 
 nSimulations <- 10000
-if(file.exists(paste0("simulations", nSimulations, ".rds"))){
-  res <- readRDS(paste0("simulations", nSimulations, ".rds"))
+if(file.exists(paste0("../data/simulations", nSimulations, ".rds"))){
+  res <- readRDS(paste0("../data/simulations", nSimulations, ".rds"))
 }else{
   res <- sapply(list(bibMod, cvtMod, dnfMod, rcbMod), function(x){
     powerSimulations(x, nSimulations)
   })
-  saveRDS(res, file = paste0("simulations", nSimulations, ".rds"))
+  saveRDS(res, file = paste0("../data/simulations", nSimulations, ".rds"))
 }
 ```
 
@@ -3052,6 +3053,7 @@ four-step procedure outlined for `PROC GLIMMIX` and `glmmTMB` +
 `glmmTMB` will be used here.
 
 ```{r}
+#| label: simr
 library(simr)
 coefs <- unname(fixef(bibMod)$cond)
 
@@ -3069,6 +3071,7 @@ for examples using a real dataset or for different effect sizes not
 calculated by the dataset provided.
 
 ```{r}
+#| label: bibmakelmer
 bibMod <- makeLmer(mu ~ a * b + (1 | block), data = bib,
                    fixef = coefs, 
                    VarCorr = 0.5, sigma = sqrt(1))
@@ -3077,6 +3080,7 @@ bibMod <- makeLmer(mu ~ a * b + (1 | block), data = bib,
 With the fitted model object, the precision analysis can be performed:
 
 ```{r}
+#| label: bibsimstep3
 bibsimr <- step3(bibMod)
 ```
 
@@ -3086,6 +3090,7 @@ Note that `update()` cannot be used to fit subsequent models like with
 `glmmTMB`.
 
 ```{r}
+#| label: cvtmakelmer
 cvtMod <- makeLmer(mu ~ a * b + (1 | block), data = cvt,
                    fixef = coefs,
                    VarCorr = 0.5, sigma = sqrt(1))
@@ -3095,6 +3100,7 @@ cvtsimr <- step3(cvtMod)
 ##### DNF
 
 ```{r}
+#| label: dnfmakelmer
 dnfMod <- makeLmer(mu ~ a * b + (1 | block), data = dnf,
                    fixef = coefs,
                    VarCorr = 0.5, sigma = sqrt(1))
@@ -3104,6 +3110,7 @@ dnfsimr <- step3(dnfMod)
 ##### RCB
 
 ```{r}
+#| label: rcbmakelmer
 rcbMod <- makeLmer(mu ~ a * b + (1 | c_block), data = rcb,
                    fixef = coefs,
                    VarCorr = 0.23, sigma = sqrt(1.26))
@@ -3256,6 +3263,7 @@ errors in general. The argument `returnObject = TRUE` within
 though we would get a convergence error message.
 
 ```{r}
+#| label: bibfit
 library(nlme)
 
 bibMod <- lme(mu ~ a * b,
@@ -3297,6 +3305,7 @@ our particular use case using the BIB design:
     implementation.
 
 ```{r}
+#| label: bibfixblockvar
 fixBlockVar <- function(model, blockVar = 0.5){
   re <- names(model$groups)
   # Assign the `pdSymm()` matrix back into the random effects structure
@@ -3333,6 +3342,7 @@ bibMod <- fixBlockVar(bibMod)
 The result:
 
 ```{r}
+#| label: bibvarcorr
 VarCorr(bibMod)
 ```
 
@@ -3345,6 +3355,7 @@ be the same using the default degrees of freedom. We need to access
 `model$fixDF$terms` to match the `SAS®` result:
 
 ```{r}
+#| label: bibstep3
 biblme <- step3(bibMod)
 ```
 
@@ -3357,6 +3368,7 @@ The CVT design proceeds in the same way as the BIB when we substitute
 the appropriate exemplary dataset.
 
 ```{r}
+#| label: cvtcontrasts
 contrasts(cvt$a) <- contrasts(cvt$b) <- contr.SAS
 cvtMod <- update(bibMod, data = cvt)
 cvtMod <- fixBlockVar(cvtMod)
@@ -3367,6 +3379,7 @@ With the DNF design, we encounter a limitation of how degrees of freedom
 are calculated:
 
 ```{r}
+#| label: dnfdof
 contrasts(dnf$a) <- contrasts(dnf$b) <- contr.SAS
 dnfMod <- update(bibMod, data = dnf)
 dnfMod <- fixBlockVar(dnfMod)
@@ -3380,6 +3393,7 @@ and a potential drawback of `nlme`. Regardless, you may need to specify
 the degrees of freedom in `emmeans` anyway.
 
 ```{r}
+#| label: dnfstep3
 dnfMod$fixDF$terms["a"] <- unique(dnfMod$fixDF$terms[names(dnfMod$fixDF$terms) != "a"])
 dnflme <- step3(dnfMod)
 ```
@@ -3396,6 +3410,7 @@ $\sigma_e^2 = 1$ and $v_{ijk} = 1.26$, we can replicate the `glmmTMB`
 results.
 
 ```{r}
+#| label: rcbvarcorr
 contrasts(rcb$a) <- contrasts(rcb$b) <- contr.SAS
 rcb$cblockVar <- 1.26
 rcbMod <- update(bibMod,
