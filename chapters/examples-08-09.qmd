@@ -849,7 +849,7 @@ The following tables include the eight parameter estimates (two intercepts, four
 
 ```{r estimate tables TMB model}
 #| echo: false
-load(file = 'data/example_09_TMBoutput.RData')
+load(file = '../data/example_09_TMBoutput.RData')
 
 kable(as.data.frame(est[1:8,]), caption = 'Parameter estimates from non-proportional odds model: R TMB', digits = 4) |>
   kable_styling(full_width = TRUE, position = "center")
@@ -1591,7 +1591,7 @@ opt <- optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = 'BFGS')
 report <- sdreport(obj, bias.correct = FALSE) # contains ADREPORT results
 est <- summary(report)
 
-save(report, est, file = 'data/example_09_TMBoutput.RData')
+save(report, est, file = '../data/example_09_TMBoutput.RData')
 ```
 
 ### Appendix E: Using TMB to obtain F-tests equivalent to SAS PROC NLMIXED output
