@@ -124,6 +124,7 @@ library(emmeans)
 library(ordinal)
 library(SASmarkdown)
 library(TMB)
+library(rstan)
 
 ex8 <- read.csv('../data/example_08.csv') %>%
   mutate(across(c(Block, Trt), factor),
@@ -339,7 +340,8 @@ fit8brm <- brm(Rating ~ Trt + (1 | Block),
                  prior(normal(0, 10), class = b),
                  prior(gamma(1, 1), class = sd)
                ),
-               chains = 4, cores = 4, iter = 2000, warmup = 1000, seed = 202
+               chains = 4, cores = 4, iter = 2000, warmup = 1000, seed = 202,
+               file = '../data/example_08_brmfit', file_refit = 'on_change'
                )
 ```
 
@@ -896,7 +898,8 @@ fit9brm_po <- brm(
   ),
   data = ex9long,
   chains = 4, cores = 4, iter = 2000, warmup = 1000, seed = 130,
-  control = list(adapt_delta = 0.95)
+  control = list(adapt_delta = 0.95),
+  file = '../data/example_09_po_brmfit', file_refit = 'on_change'
 )
 ```
 
@@ -916,7 +919,8 @@ fit9brm_nonpo <- brm(
   ),
   data = ex9long,
   chains = 4, cores = 4, iter = 2000, warmup = 1000, seed = 130,
-  control = list(adapt_delta = 0.95)
+  control = list(adapt_delta = 0.95),
+  file = '../data/example_09_nonpo_brmfit', file_refit = 'on_change'
 )
 ```
 
@@ -951,6 +955,9 @@ The same reasons discussed for the previous example apply to explain why there a
 
 ```{r posterior pred example 9}
 #| warning: false
+#| echo: false
+#| fig-height: 5
+#| fig-width: 7
 epred_nonpo <- posterior_epred(fit9brm_nonpo, newdata = data.frame(Variety = c('1','2','3')), re_formula = ~ 0)
 
 ex9brmsest <- apply(epred_nonpo, 2:3, quantile, probs = c(0.5, 0.025, 0.975)) %>%
@@ -965,12 +972,6 @@ ex9tmbest <- as.data.frame(est[66:74, ]) %>%
          Upper = Estimate + `Std. Error` * qt(0.975, df = 8),
          across(c(Estimate, Lower, Upper), plogis))
 
-```
-
-```{r ex9 comparison fig}
-#| echo: false
-#| fig-height: 5
-#| fig-width: 7
 ex9sasest <- read.csv('../data/example_09_sasestimateoutput.csv') %>%
   filter(grepl('^prob', Label)) %>%
   mutate(Rating = rep(c('A', 'B', 'C'), 3),
@@ -1720,7 +1721,7 @@ generated quantities {
 }
 ```
 
-To fit the model, first set up the input data as a list. The rating data must be input in long format as a three-column matrix with two 0s and one 1 in each row. Next, compile and sample the model.
+To fit the model, first set up the input data as a list. The rating data must be input in long format as a three-column matrix with two 0s and one 1 in each row. Next, compile and sample the model and generate summary of desired quantities. They are very similar to the brms estimates.
 
 ```{r set up data for Stan}
 #| eval: false
@@ -1741,14 +1742,6 @@ ex9stanmod_multinomial <- cmdstan_model("ex9multinomial.stan")
 
 ex9stanfit_multinomial <- ex9stanmod_multinomial$sample(data = ex9standata_mult, seed = 111, chains = 4, parallel_chains = 4, iter_warmup = 1000, iter_sampling = 1000)
 
-ex9stanfit_multinomial$save_object(file = "../data/example_09_stanfitmultinomial.rds")
-```
-
-Generate summary of desired quantities. They are very similar to the estimates from `brms::brm()`.
-
-```{r generate Stan summary}
-ex9stanfit_multinomial <- readRDS("../data/example_09_stanfitmultinomial.rds")
-
 ex9stanfit_summary <- ex9stanfit_multinomial$summary(
   variables = c('pAv1', 'pBv1', 'pCv1', 'pAv2', 'pBv2', 'pCv2', 'pAv3', 'pBv3', 'pCv3', 'sd_g', 'sd_gv'), 
   ~ quantile(.x, probs = c(0.5, 0.025, 0.975))
@@ -1757,15 +1750,15 @@ ex9stanfit_summary <- ex9stanfit_multinomial$summary(
 
 ```{r display Stan summary}
 #| echo: false
+ex9stanfit_summary <- read.csv("../data/example_09_stansummary.csv")
+
 ex9stanfit_summary |>
   mutate(variable = c(c(outer(c('Prob(A) Variety', 'Prob(B) Variety', 'Prob(C) Variety'), 1:3, paste)), 'grower variance', 'grower:variety variance')) |>
-kable(digits = 3) |>
+kable(digits = 3, col.names = c('variable', 'median', '2.5%', '97.5%')) |>
   kable_styling(full_width = TRUE, position = "center")
 ```
 
 ## References:
-
-<!-- don't edit this section at all --/> 
 
 ::: {#refs}
 :::
