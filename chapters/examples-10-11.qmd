@@ -1,15 +1,12 @@
 ---
 title: "Examples 10 and 11: Mixed Models-Based Precision and Power Analyses for Design Comparisons Using `PROC GLIMMIX` and `glmmTMB` + `emmeans`"
-author: "????"
+author: "Daniel G. Palmer, Nora M. Bello, Josefina Lacasa, Réka Howard, Walter W. Stroup"
 bibliography: ../references.bib
+reference-location: margin
 editor: 
   markdown: 
     wrap: 72
 ---
-
-## Joint Effort by the NCCC170: "Research Advances in Agricultural Statistics": Informing Best Practices for GLMM Implementation
-
-## Contributors: Daniel G. Palmer, Nora M. Bello, Josefina Lacasa, Réka Howard, Walter W. Stroup
 
 ::: callout-caution
 This resource was created by a joint effort of NCCC170 members and
@@ -45,19 +42,19 @@ Another factor to consider is that canned power calculators usually
 cannot appropriately account for the complexity of the experimental
 design under consideration. Often, statisticians commonly implement
 special simulation models (Monte Carlo or other) to compute precision
-and power for research studies [@stroup2018]. This is usually
+and power for research studies [@stroup_sas_2018]. This is usually
 sufficient, but simulation does not offer a closed-form solution unlike
 many standard power calculators which limits its flexibility for
 case-specific simulations.
 
 The authors share approaches yielding identical results in SAS® [@sas]
-and R [@base; @brooks2017; @mcgillycuddy2025; @emmeans] for precision
+and R [@base; @glmmTMB; @glmmTMB_multi; @emmeans] for precision
 and power analysis with linear mixed models. In both platforms, the
 algorithm is flexible so any design involving fixed and random effects
 with normally-distributed responses can be considered.
 :::
 
-## The full document needs to be compiled by someone that has access to desktop SAS. I no longer have access. Just remove `*| eval: false;` from code chunks. -Daniel
+<!--- The full document needs to be compiled by someone that has access to desktop SAS. I no longer have access. Just remove `*| eval: false;` from code chunks. -Daniel -->
 
 ```{r}
 #| echo: false
@@ -77,8 +74,7 @@ knitr::opts_chunk$set(
 ```{=html}
 <!--
 This document will not be produced if the package version for
-[`reformulas`
-$\gt 0.4.0$](https://github.com/glmmTMB/glmmTMB/issues/1239). Make sure
+[`reformulas` $\gt 0.4.0$](https://github.com/glmmTMB/glmmTMB/issues/1239). Make sure
 to update this package for use with `glmmTMB`.
 -->
 ```
@@ -163,8 +159,8 @@ proceed with the power analysis for that design. There are a set number
 of resources for the candidate designs.
 
 All datasets come from the book *Generalized Linear Mixed Models
-Concepts, Methods, and Applications, 1st Edition* [@stroup2016] and *2nd
-Edition* Chapter 21, Section 21.2 [@stroup2024a; @stroup2024b].
+Concepts, Methods, and Applications, 1st Edition* [@stroup_generalized_2012] and *2nd
+Edition* Chapter 21, Section 21.2 [@stroup_generalized_2024].
 
 1.  **Balanced Incomplete Block Design**\
     The balanced incomplete block (BIB) design has a natural block size
@@ -276,7 +272,7 @@ if(knitr::is_html_output()){
 
 ## Data Generation Process and Model Specification
 
-Following @stroup2016 and Stroup et al. [-@stroup2024a; -@stroup2024b], the ANOVA
+Following @stroup_generalized_2012 and @stroup_generalized_2024, the ANOVA
 shells for each design are implemented. Each ANOVA shell has four parts
 described below:
 
@@ -577,12 +573,12 @@ Here is a breakdown of the four steps:
 
   @littell80 and @lohr84 introduced the exemplary dataset approach for
   linear models in `PROC GLM`. @stroup1999 introduced the exemplary
-  dataset approach for linear mixed models in `PROC MIXED`. @stroup2016
-  and Stroup et al. [-@stroup2024a; -@stroup2024b] introduced the exemplary dataset
+  dataset approach for linear mixed models in `PROC MIXED`. @stroup_generalized_2012
+  and Stroup et al. [-@stroup_generalized_2024; -@stroup2024b] introduced the exemplary dataset
   approach for generalized linear mixed models in `PROC GLIMMIX`.
 
-- Step 2 - `PROC GLIMMIX` [@sas] in `SAS®` or `glmmTMB` [@brooks2017;
-  @mcgillycuddy2025] in `R` step to "fit" model with fixed (co)variance
+- Step 2 - `PROC GLIMMIX` [@sas] in `SAS®` or `glmmTMB` [@glmmTMB;
+  @glmmTMB_multi] in `R` step to "fit" model with fixed (co)variance
   components
 
   - In `SAS®`, use the `PARMS` statement with the `HOLD` and `NOPROFILE`
@@ -594,8 +590,8 @@ Here is a breakdown of the four steps:
     See [here](#covariance-component-parameterization).
 
   - We know that $\sigma_r^2 = 0.5$ and $\sigma_e^2 = 1$ from the BIB,
-    CVT, and DNF designs. For the forced RCB, @stroup2016 and
-    Stroup et al. [-@stroup2024a; -@stroup2024b] say that the variance component for
+    CVT, and DNF designs. For the forced RCB, @stroup_generalized_2012 and
+    Stroup et al. [-@stroup_generalized_2024; -@stroup2024b] say that the variance component for
     the forced block ($\sigma_f^2$) can be calculated with expected mean
     squares as follows:
 
@@ -788,7 +784,6 @@ treatment allocation in the BIB design as shown in @tbl-2.
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 data bib;
     input block @@;
@@ -867,7 +862,6 @@ changes:
 ::: {#lst-SASBIBmod}
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 proc glimmix data=bib noprofile;
 	class block a b;
@@ -1166,7 +1160,6 @@ This (see @lst-SASBIBmod) is all put into a `MACRO` for ease of use.
 ::: {#lst-SASstep3}
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 %macro step3(data, blockVar = 0.5001, residualVar = 1, subject = block);
 proc glimmix data = &data noprofile outdesign = xzmatrix;
@@ -1332,7 +1325,6 @@ the CVT dataset. The rest of the program does not change.
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 data cvt;
  input block @@;
@@ -1402,7 +1394,6 @@ summary(cvtMod)
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 %step3(cvt);
 ```
@@ -1519,7 +1510,6 @@ For the DNF design, we replace the BIB or CVT exemplary dataset in Step
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 data dnf;
     input block @@;
@@ -1586,7 +1576,6 @@ summary(dnfMod)
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 %step3(dnf);
 ```
@@ -1606,7 +1595,7 @@ CVT and DNF), block variance $\sigma_r^2=0.5$ and unit (within block)
 variance $\sigma_e^2=1$. Complete block alters variance: complete block
 variance $\sigma_f^2=0.23$ and unit (within block) variance
 $\sigma_e^2=1.26$. The method for the incomplete to complete block
-variance conversion is shown in @stroup2016 and Stroup et al. [-@stroup2024a; -@stroup2024b] in @eq-ems.
+variance conversion is shown in @stroup_generalized_2012 and Stroup et al. [-@stroup_generalized_2024; -@stroup2024b] in @eq-ems.
 
 For our example, we have
 
@@ -1639,7 +1628,6 @@ components, the `SAS®` user will need to be comfortable with using
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 /* Calculating the variance components (\sigma_R^2 and \sigma_E^2) */
 /* Stroup says that the variance component for block (\sigma_R^2) can be calculated with 
@@ -1863,7 +1851,6 @@ complete blocks.
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 /* here, exemplary design is just the disconnected design with blocks redefined         */
 /* i.e. natural blocks 1 and 2 are complete block 1, 3 and 4 are complete block 2, etc. */
@@ -1887,7 +1874,6 @@ rcb$c_block <- factor(ceiling(as.numeric(as.character(rcb$block)) / 2))
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 proc glimmix data=rcb noprofile;
 	class block a b;
@@ -1942,7 +1928,6 @@ summary(rcbMod)
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 %step3(rcb, blockVar = 0.23, residualVar = 1.26, subject = c_block);
 ```
@@ -1963,7 +1948,6 @@ contrast of interest or by binding the columns/rows.
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 proc sort data=bib_1dfcontrast;
     by label;
@@ -1981,13 +1965,15 @@ data precision;
     by label;
     drop Fvalue NumDF DenDF;
 run;
-          
+
+/*                    
 proc export data=precision
     outfile='precision.csv'
     dbms=csv
     replace;
 run;
-
+*/
+    
 title "Standard Errors from Precision Analyses for Competing Designs Using PROC GLIMMIX";
 proc print data = precision;
 run;
@@ -2026,8 +2012,8 @@ reshapedPrecision <- reshape(precision[, c("label", "SE", "Design")],
                              direction = "wide",
                              idvar = "label", timevar = "Design")
 
-if(file.exists("precision.csv")){
-  SASprecision <- read.csv("precision.csv")[, -1]
+if(file.exists("../data/example_10_precision.csv")){
+  SASprecision <- read.csv("../data/example_10_precision.csv")[, -1]
   reshapedPrecision <- merge(SASprecision, reshapedPrecision, by.x = "Label", by.y = "label")
 }else{
   stop("precision.csv not found.")
@@ -2162,7 +2148,6 @@ $F$-distribution (`probF`).
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 data cvt_Power;
 	set cvt_Foverall cvt_Fcontrasts cvt_1dfcontrast;
@@ -2184,6 +2169,7 @@ run;
 
 ```{sas}
 *| echo: false;
+*| eval: false;
 
 proc export data=cvt_Power
     outfile='power.csv'
@@ -2213,7 +2199,6 @@ exemplaryPower$power <- 1 - pf(exemplaryPower$F.crit, exemplaryPower$df1, exempl
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 proc print data = cvt_Power;
 run;
@@ -2234,8 +2219,8 @@ cvtPower <- powerWide[powerWide$label %in% c("a", "b", "a:b", "4-A|B simple effe
 
 cvtPower <- cvtPower[, !(colnames(cvtPower) %in% c("estimate", "SE", "t.ratio", "p.value", "Design", "alpha"))]
 
-if(file.exists("power.csv")){
-  SASpower <- read.csv("power.csv")[, -c(1, 5, 8)]
+if(file.exists("../data/example_10_power.csv")){
+  SASpower <- read.csv("../data/example_10_power.csv")[, -c(1, 5, 8)]
   cvtPower <- merge(SASpower, cvtPower, by.x = "Label", by.y = "label")
 }else{
   stop("power.csv not found.")
@@ -2371,7 +2356,6 @@ above), we would need to add another 10 blocks (5 reps) each.
 
 ```{sas}
 *| collectcode: true;
-*| eval: false;
 
 %macro simulation(data, nsims = 10000, blockVar = 0.5001, residualVar = 1, subject = block);
 ods exclude all;
@@ -2679,7 +2663,6 @@ ggplot() +
 
 ```{r}
 #| echo: false
-#| eval: false
 
 colnames(precision)[colnames(precision) %in% c("estimate", "SE")] <-
   paste0("Exemplary.", colnames(precision)[colnames(precision) %in% c("estimate", "SE")])
@@ -3031,7 +3014,7 @@ fits for the block variance component for all designs.
 #                                                                         "#009E73"))))
 ```
 
-##### Need to discuss coverage when/if using full 10000 simulations.
+<!--- Need to discuss coverage when/if using full 10000 simulations. -->
 
 ### Why not use `lme4` @lme4 or `nlme` @nlme for this purpose? {#why-not-use-lme4-or-nlme-for-this-purpose}
 
@@ -3568,7 +3551,7 @@ adjustments](https://github.com/glmmTMB/glmmTMB/pull/1153/) for (G)LMMs
 through `summary(., ddf = "satterthwaite")` and
 `summary(., ddf = "kenward-roger")`, respectively. We are still waiting
 on `emmeans` support with these degrees of freedom methods. According to
-@stroup2016 and Stroup et al. [-@stroup2024a; -@stroup2024b], neither approximation is
+@stroup_generalized_2012 and Stroup et al. [-@stroup_generalized_2024; -@stroup2024b], neither approximation is
 appropriate for GLMMs using Laplace or quadrature approximation. Both
 are apparently allowed for use with `glmmTMB` while fixing the
 (co)variance components (ignoring the GLMM case here), but it is likely
@@ -3692,6 +3675,7 @@ if(knitr::is_html_output()){
 
 {{< pagebreak >}}
 
+<!---
 ## TODO
 
 - Make sure all tables use the `gt` package and are consistent
@@ -3720,6 +3704,7 @@ if(knitr::is_html_output()){
   file
 
 {{< pagebreak >}}
+-->
 
 ## References
 
