@@ -1,7 +1,6 @@
 ---
 title: "About this Guide"
 author: "[NCCC-170 Group](https://nccc170.org/)"
-bibliography: references.bib
 ---
 
 
@@ -36,17 +35,35 @@ Herein is guide to particular challenging issues when fitting GLMMs. We have ass
 
 1. Repeated measures for zero-inflated data (RCBD). 
 
+1. Special section on interpreting randomized quantile residuals. 
 
 
 ## Contributors:
+    
+- Nora Bello, *USDA-ARS*        
+- Bruce Craig, *Purdue University*        
+- Xin Dai, *Utah State University*      
+- Susan Durham, *Utah State University* (emeritus)        
+- Phil Dixon, *Iowa State University*     
+- Conor Fair, *University of Georgia*     
+- Réka Howard, *University of Nebraska*     
+- Clark Kogan, *StatsCraft*     
+- Josefina Lacasa, *Kansas State University*      
+- Raul Macchiavelli, *University of Puerto Rico*      
+- Daniel Palmer, *StatsCraft*       
+- Julia Piaskowski, *University of Idaho*  
+- Bipen Poudel, *University of Nebraska*  
+- Quentin Read, *USDA-ARS*        
+- Aaron Rendahl, *University of Minnesota* 
+- Walter Stroup, *University of Nebraska* (emeritus)        
+- Linda Young, *USDA-NASS* (retired)   
 
-- Nora Bello, *USDA-ARS*
-- Walter Stroup, *University of Nebraska (emeritus)*
-- Julia Piaskowski, *University of Idaho*
-- ....[all the rest]
+## Acknowledgments
 
-## References
+- Multistate Research Project, NCCC170, Research advances in agricultural statistics. 
 
-::: {#refs}
-:::
+## License
+
+All data and code used in this website are licensed under  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/legalcode.en){.external target="_blank"}. 
+
 
