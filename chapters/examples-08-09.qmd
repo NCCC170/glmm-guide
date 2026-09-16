@@ -3,9 +3,7 @@ title: "Example 8 & 9: Multinomial GLMMs with and without proportional odds"
 author: "Quentin D. Read, Bruce A. Craig, Philip M. Dixon, and Walter W. Stroup"
 bibliography: ../references.bib
 reference-location: margin
-format:
-  html:
-    embed-resources: true
+format: html
 filters:
   - collapse-output
 extensions:
@@ -1758,7 +1756,7 @@ kable(digits = 3, col.names = c('variable', 'median', '2.5%', '97.5%')) |>
   kable_styling(full_width = TRUE, position = "center")
 ```
 
-## References:
+## References
 
 ::: {#refs}
 :::

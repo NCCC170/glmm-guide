@@ -1,0 +1,13 @@
+Effect,Label,SE_bib,SE_cvt,SE_dnf,SE_rcb
+a*b,1-A main effect,0.3893,0.4166,0.5774,0.4099
+a*b,2-B main effect,0.4767,0.4933,0.4472,0.5020
+a*b,3-A x B interaction,0.9535,0.9867,0.8944,1.0040
+a*b,4-A|B simple effect,0.6742,0.6207,0.7746,0.7099
+a*b,5-B|A simple effect,0.6742,0.6207,0.6325,0.7099
+a*b,control vs trt 1,0.6742,0.6207,0.6325,0.7099
+a*b,control vs trt 2,0.6742,0.6207,0.6325,0.7099
+a*b,control vs trt 3,0.6742,0.6207,0.7746,0.7099
+a*b,control vs trt 4,0.6742,0.6207,0.7746,0.7099
+a*b,control vs trt 5,0.6742,0.6207,0.7746,0.7099
+a*b,trt 1 vs trt 2,0.6742,0.7670,0.6325,0.7099
+a*b,trt 1 vs trt 3,0.6742,0.7670,0.7746,0.7099
