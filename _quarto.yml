@@ -51,8 +51,9 @@ website:
         text: "Examples 10 & 11: Precision and Power Analysis"
       - href: chapters/interpreting-quantile-residuals.qmd
         text: "Randomized Quantile Residuals"
-
-
+      - href: chapters/references.qmd
+        text: "References"
+        
 format:
   html:
     theme: [litera, css/styles.scss]
