@@ -209,7 +209,7 @@ $$ Y_i \sim G(\hat{\mu_i}, \hat{\phi}) $$
 
 $$ r_{i} = F(y_i; \hat{\mu_i}, \hat{\phi} )$$
 
-This process is valid for Gaussian-distributed variables. By default DHARMa simulates a new data set of 250 observations for each observation in the input data; the documentation recommends running simulations up 1000 observations. Unlike Dunn and Smyth (-@Dunn1996), only one realization is of the quantile residuals is produced. 
+This process is valid for Gaussian-distributed variables. By default DHARMa simulates a new data set of 250 observations for each observation in the input data; the documentation recommends running simulations up 1000 observations. Unlike Dunn and Smyth (-@Dunn1996), only one realization of the quantile residuals is produced. 
 
 ### Expectations of the Quantile Residuals
 

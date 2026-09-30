@@ -2,7 +2,7 @@
 title: "How to Prepare"
 ---
 
-You are welcome to read this resource, but here are instructions if you want to run the code yourself and insepct the results. 
+You are welcome to read this resource, but here are instructions if you want to run the code yourself and inspect the results. 
 
 ## Data
 

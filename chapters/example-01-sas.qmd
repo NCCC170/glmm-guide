@@ -91,7 +91,7 @@ run;
 
 ## Alternative Approach 2
 
-Fit the model allowing the variance componens to become negative. SAS has an option for overriding the restriction on negative variance components.
+Fit the model allowing the variance components to become negative. SAS has an option for overriding the restriction on negative variance components.
 
 ```{r engine="sashtml",  engine.path=saspath, include=TRUE, engine.opts=sasopts, comment=""}
 proc glimmix data=Example1Data nobound;
