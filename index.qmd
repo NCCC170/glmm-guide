@@ -5,7 +5,7 @@ author: "[NCCC-170 Group](https://nccc170.org/)"
 
 
 
-Herein is guide to particular challenging issues when fitting GLMMs. We have assembled 15 challenges and provided analytical solutions and code examples in SAS and R. These examples are largely drawn from *Generalized Linear Mixed Models* (@stroup_generalized_2024) with some additional examples from real world analytical issues we have encountered. 
+Herein is a guide to particular challenging issues when fitting GLMMs. We have assembled 15 challenges and provided analytical solutions and code examples in SAS and R. These examples are largely drawn from *Generalized Linear Mixed Models* (@stroup_generalized_2024) with some additional examples from real-world analytical issues we have encountered. 
 
 ## Examples
 
@@ -43,7 +43,7 @@ Herein is guide to particular challenging issues when fitting GLMMs. We have ass
 - Nora Bello, *USDA-ARS*        
 - Bruce Craig, *Purdue University*        
 - Xin Dai, *Utah State University*      
-- Susan Durham, *Utah State University* (emeritus)        
+- Susan Durham, *Utah State University* (emerita)        
 - Phil Dixon, *Iowa State University*     
 - Conor Fair, *University of Georgia*     
 - Réka Howard, *University of Nebraska*     
@@ -52,7 +52,7 @@ Herein is guide to particular challenging issues when fitting GLMMs. We have ass
 - Raul Macchiavelli, *University of Puerto Rico*      
 - Daniel Palmer, *StatsCraft*       
 - Julia Piaskowski, *University of Idaho*  
-- Bipen Poudel, *University of Nebraska*  
+- Bipin Poudel, *University of Nebraska*  
 - Quentin Read, *USDA-ARS*        
 - Aaron Rendahl, *University of Minnesota* 
 - Walter Stroup, *University of Nebraska* (emeritus)        

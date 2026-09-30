@@ -78,16 +78,16 @@ $$ E(y_{ij}) = \mu_{i} $$
 
 ## GLMM Challenge(s) in Detail
 
-As a standard Gaussian mixed model, no complications are expected. However, in this case, the variance estimating equation yields a negative solution. A common default software solution to is force the variance, $\hat{\sigma^2_b}$, to be zero. The set-to-zero approach effectively pools block-level and unit-level sources of variation, resulting in:
+As a standard Gaussian mixed model, no complications are expected. However, in this case, the variance estimating equation yields a negative solution. A common default software solution is to force the variance, $\hat{\sigma^2_b}$, to be zero. The set-to-zero approach effectively pools block-level and unit-level sources of variation, resulting in:
 
--   a downward biased residual variance estimate;
--   an upward biased test statistics;
+-   a downward-biased residual variance estimate;
+-   upward-biased test statistics;
 -   an inflated type I error rate; and
 -   reduced accuracy of confidence interval coverage.
 
 ## Solutions
 
-1. Fit the model using a compound symmetry variance structure, which will allow negative correlations within groups. This reparametrizes the model as thus:
+1. Fit the model using a compound symmetry variance structure, which will allow negative correlations within groups. This reparametrizes the model thus:
 
 $$\eta_{ij} = \eta + \tau_i$$
 
